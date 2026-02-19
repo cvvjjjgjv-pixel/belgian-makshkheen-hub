@@ -9,10 +9,12 @@ Deno.serve(async (req) => {
   }
 
   const GNEWS_API_KEY = Deno.env.get('GNEWS_API_KEY');
+  console.log('GNEWS_API_KEY present:', !!GNEWS_API_KEY, 'length:', GNEWS_API_KEY?.length ?? 0);
 
   if (!GNEWS_API_KEY) {
+    console.error('GNEWS_API_KEY is not set in environment');
     return new Response(
-      JSON.stringify({ error: 'GNEWS_API_KEY not configured' }),
+      JSON.stringify({ error: 'GNEWS_API_KEY not configured on server' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }
