@@ -6,11 +6,11 @@ import Stories from "@/components/Stories";
 import LiveMatchCard from "@/components/LiveMatchCard";
 import FeedPost from "@/components/FeedPost";
 import TVTab from "@/components/TVTab";
-import ForumTab from "@/components/ForumTab";
 import ChatTab from "@/components/ChatTab";
 import ProfileTab from "@/components/ProfileTab";
+import NewsTab from "@/components/NewsTab";
 
-type Tab = "accueil" | "tv" | "forum" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "news" | "chat" | "profil";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("accueil");
@@ -71,7 +71,7 @@ const Index = () => {
               </>
             )}
             {activeTab === "tv" && <TVTab />}
-            {activeTab === "forum" && <ForumTab />}
+            {activeTab === "news" && <NewsTab />}
             {activeTab === "chat" && <ChatTab />}
             {activeTab === "profil" && <ProfileTab />}
           </motion.div>
