@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Newspaper, ExternalLink, Clock, RefreshCw } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Article {
   title: string;
   description: string;
-  content: string;
   url: string;
   image: string | null;
   publishedAt: string;
@@ -13,8 +13,6 @@ interface Article {
     url: string;
   };
 }
-
-const GNEWS_API_KEY = import.meta.env.VITE_GNEWS_API_KEY;
 
 const NewsTab = () => {
   const [articles, setArticles] = useState<Article[]>([]);
@@ -28,14 +26,21 @@ const NewsTab = () => {
     setError(null);
 
     try {
-      const res = await fetch(
-        `https://gnews.io/api/v4/search?q=EST+Tunis+OR+Espérance+Sportive+Tunis+OR+مكشخين&lang=fr&country=any&max=10&apikey=${GNEWS_API_KEY}`
-      );
-      if (!res.ok) throw new Error("Erreur de chargement des actualités");
-      const data = await res.json();
+      const { data, error: fnError } = await supabase.functions.invoke("gnews-proxy", {
+        body: {
+          q: "EST Tunis OR Espérance Sportive Tunis OR football Tunisie",
+          lang: "fr",
+          max: 10,
+        },
+      });
+
+      if (fnError) throw new Error(fnError.message);
+      if (data?.error) throw new Error(data.error);
+
       setArticles(data.articles || []);
     } catch (err) {
-      setError("Impossible de charger les actualités. Vérifie ta clé API GNews.");
+      setError("Impossible de charger les actualités.");
+      console.error("GNews error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -101,7 +106,7 @@ const NewsTab = () => {
         </div>
       )}
 
-      {/* Articles list */}
+      {/* Empty state */}
       {!loading && !error && articles.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <Newspaper className="w-16 h-16 mx-auto mb-4 opacity-20" />
@@ -109,7 +114,8 @@ const NewsTab = () => {
         </div>
       )}
 
-      {!loading && articles.map((article, i) => (
+      {/* Articles list */}
+      {!loading && !error && articles.map((article, i) => (
         <a
           key={i}
           href={article.url}
@@ -117,7 +123,6 @@ const NewsTab = () => {
           rel="noopener noreferrer"
           className="block mx-4 mb-3 bg-card rounded-2xl border border-border overflow-hidden hover:border-accent/40 transition-colors"
         >
-          {/* Featured image */}
           {article.image && (
             <div className="relative">
               <img
@@ -128,7 +133,6 @@ const NewsTab = () => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}
               />
-              {/* Live-style overlay for first article */}
               {i === 0 && (
                 <div className="absolute top-3 left-3">
                   <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-destructive text-white text-[10px] font-bold rounded-full">
@@ -141,7 +145,6 @@ const NewsTab = () => {
           )}
 
           <div className="p-4">
-            {/* Source + time */}
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[10px] font-bold text-accent uppercase tracking-wide">
                 {article.source.name}
@@ -153,19 +156,16 @@ const NewsTab = () => {
               </div>
             </div>
 
-            {/* Title */}
             <h3 className="text-sm font-bold text-foreground leading-snug mb-2 line-clamp-2">
               {article.title}
             </h3>
 
-            {/* Description */}
             {article.description && (
               <p className="text-xs text-muted-foreground line-clamp-2 mb-3">
                 {article.description}
               </p>
             )}
 
-            {/* Read more */}
             <div className="flex items-center gap-1 text-accent text-xs font-semibold">
               <span>Lire l'article</span>
               <ExternalLink className="w-3 h-3" />
