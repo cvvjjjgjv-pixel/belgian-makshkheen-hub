@@ -29,12 +29,14 @@ Deno.serve(async (req) => {
     url.searchParams.set('max', String(max));
     url.searchParams.set('apikey', GNEWS_API_KEY);
 
+    console.log('Calling GNews URL (without key):', url.toString().replace(GNEWS_API_KEY, 'REDACTED'));
     const response = await fetch(url.toString());
     const data = await response.json();
+    console.log('GNews response status:', response.status, 'data:', JSON.stringify(data).slice(0, 200));
 
     if (!response.ok) {
       return new Response(
-        JSON.stringify({ error: data.errors?.[0] || 'GNews API error' }),
+        JSON.stringify({ error: data.errors?.[0] || 'GNews API error', gnewsStatus: response.status }),
         { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
