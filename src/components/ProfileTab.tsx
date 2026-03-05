@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { Settings, ChevronRight, Trophy, Heart, MessageSquare, Star, LogOut, Edit3, X, Check } from "lucide-react";
+import { Settings, ChevronRight, Trophy, Heart, MessageSquare, Star, LogOut, Edit3, X, Check, Shield, Crown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
+import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const ProfileTab = () => {
   const { user, signOut } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
+  const { roles, isAdmin, isSuperAdmin } = useUserRole();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
@@ -116,7 +118,19 @@ const ProfileTab = () => {
           </div>
         ) : (
           <>
-            <h2 className="text-lg font-bold text-foreground">{profile?.display_name || "Utilisateur"}</h2>
+            <h2 className="text-lg font-bold text-foreground flex items-center justify-center gap-2">
+              {profile?.display_name || "Utilisateur"}
+              {isSuperAdmin && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-accent/20 text-accent uppercase">
+                  <Crown className="w-3 h-3" /> Super Admin
+                </span>
+              )}
+              {isAdmin && !isSuperAdmin && (
+                <span className="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full bg-primary/20 text-primary uppercase">
+                  <Shield className="w-3 h-3" /> Admin
+                </span>
+              )}
+            </h2>
             {profile?.bio && <p className="text-sm text-muted-foreground">{profile.bio}</p>}
             <p className="text-xs text-muted-foreground">
               {profile?.location ? `📍 ${profile.location} · ` : ""}Membre depuis {memberSince}
