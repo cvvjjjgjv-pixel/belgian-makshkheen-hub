@@ -9,6 +9,7 @@ import { toast } from "sonner";
 const ProfileTab = () => {
   const { user, signOut } = useAuth();
   const { profile, loading, updateProfile } = useProfile();
+  const { roles, isAdmin, isSuperAdmin } = useUserRole();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState("");
