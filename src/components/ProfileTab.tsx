@@ -5,6 +5,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import UserPostsManager from "./UserPostsManager";
+import CreatePostForm from "./CreatePostForm";
 
 const ProfileTab = () => {
   const { user, signOut } = useAuth();
@@ -12,6 +14,8 @@ const ProfileTab = () => {
   const { roles, isAdmin, isSuperAdmin } = useUserRole();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [postRefreshKey, setPostRefreshKey] = useState(0);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
@@ -154,8 +158,18 @@ const ProfileTab = () => {
         </div>
       </div>
 
+      {/* Create Post inline */}
+      {showCreatePost && (
+        <div className="px-4 mb-2">
+          <CreatePostForm onPostCreated={() => { setPostRefreshKey((k) => k + 1); setShowCreatePost(false); }} />
+        </div>
+      )}
+
+      {/* User Posts Manager */}
+      <UserPostsManager onCreatePost={() => setShowCreatePost(!showCreatePost)} />
+
       {/* Email */}
-      <div className="px-4 mb-2">
+      <div className="px-4 mt-4 mb-2">
         <p className="text-xs text-muted-foreground text-center">{user.email}</p>
       </div>
 

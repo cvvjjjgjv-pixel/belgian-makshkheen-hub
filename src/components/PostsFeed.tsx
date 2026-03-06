@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Heart, MessageCircle, Send, Trash2, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import CommentsSection from "./CommentsSection";
 
 interface Post {
   id: string;
@@ -31,6 +32,16 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+
+  const toggleComments = (postId: string) => {
+    setExpandedComments((prev) => {
+      const s = new Set(prev);
+      if (s.has(postId)) s.delete(postId);
+      else s.add(postId);
+      return s;
+    });
+  };
 
   const fetchPosts = useCallback(async () => {
     const { data, error } = await supabase
@@ -189,9 +200,13 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                     <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
                     <span>{post.likes_count}</span>
                   </button>
-                  <button className="flex items-center gap-1.5 text-sm text-secondary-foreground">
+                  <button
+                    onClick={() => toggleComments(post.id)}
+                    className={`flex items-center gap-1.5 text-sm transition-colors ${expandedComments.has(post.id) ? "text-accent" : "text-secondary-foreground"}`}
+                  >
                     <MessageCircle className="w-5 h-5" />
                     <span>{post.comments_count}</span>
+                    {expandedComments.has(post.id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                   <button className="text-secondary-foreground">
                     <Send className="w-5 h-5" />
@@ -199,6 +214,19 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                 </div>
               </div>
             </div>
+
+            {expandedComments.has(post.id) && (
+              <CommentsSection
+                postId={post.id}
+                onCommentCountChange={(delta) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === post.id ? { ...p, comments_count: Math.max(0, p.comments_count + delta) } : p
+                    )
+                  );
+                }}
+              />
+            )}
           </div>
         );
       })}
