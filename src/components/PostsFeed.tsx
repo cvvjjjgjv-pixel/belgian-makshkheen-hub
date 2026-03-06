@@ -1,10 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Heart, MessageCircle, Send, Trash2, MoreHorizontal } from "lucide-react";
+import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
 import { formatDistanceToNow } from "date-fns";
 import { fr } from "date-fns/locale";
+import CommentsSection from "./CommentsSection";
 
 interface Post {
   id: string;
