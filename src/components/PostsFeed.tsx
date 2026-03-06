@@ -32,6 +32,16 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
+
+  const toggleComments = (postId: string) => {
+    setExpandedComments((prev) => {
+      const s = new Set(prev);
+      if (s.has(postId)) s.delete(postId);
+      else s.add(postId);
+      return s;
+    });
+  };
 
   const fetchPosts = useCallback(async () => {
     const { data, error } = await supabase
