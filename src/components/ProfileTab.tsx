@@ -5,6 +5,8 @@ import { useProfile } from "@/hooks/useProfile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import UserPostsManager from "./UserPostsManager";
+import CreatePostForm from "./CreatePostForm";
 
 const ProfileTab = () => {
   const { user, signOut } = useAuth();
