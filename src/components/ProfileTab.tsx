@@ -158,8 +158,18 @@ const ProfileTab = () => {
         </div>
       </div>
 
+      {/* Create Post inline */}
+      {showCreatePost && (
+        <div className="px-4 mb-2">
+          <CreatePostForm onPostCreated={() => { setPostRefreshKey((k) => k + 1); setShowCreatePost(false); }} />
+        </div>
+      )}
+
+      {/* User Posts Manager */}
+      <UserPostsManager onCreatePost={() => setShowCreatePost(!showCreatePost)} />
+
       {/* Email */}
-      <div className="px-4 mb-2">
+      <div className="px-4 mt-4 mb-2">
         <p className="text-xs text-muted-foreground text-center">{user.email}</p>
       </div>
 
