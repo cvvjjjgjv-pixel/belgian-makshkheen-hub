@@ -200,9 +200,13 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                     <Heart className={`w-5 h-5 ${liked ? "fill-current" : ""}`} />
                     <span>{post.likes_count}</span>
                   </button>
-                  <button className="flex items-center gap-1.5 text-sm text-secondary-foreground">
+                  <button
+                    onClick={() => toggleComments(post.id)}
+                    className={`flex items-center gap-1.5 text-sm transition-colors ${expandedComments.has(post.id) ? "text-accent" : "text-secondary-foreground"}`}
+                  >
                     <MessageCircle className="w-5 h-5" />
                     <span>{post.comments_count}</span>
+                    {expandedComments.has(post.id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
                   <button className="text-secondary-foreground">
                     <Send className="w-5 h-5" />
@@ -210,6 +214,19 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                 </div>
               </div>
             </div>
+
+            {expandedComments.has(post.id) && (
+              <CommentsSection
+                postId={post.id}
+                onCommentCountChange={(delta) => {
+                  setPosts((prev) =>
+                    prev.map((p) =>
+                      p.id === post.id ? { ...p, comments_count: Math.max(0, p.comments_count + delta) } : p
+                    )
+                  );
+                }}
+              />
+            )}
           </div>
         );
       })}
