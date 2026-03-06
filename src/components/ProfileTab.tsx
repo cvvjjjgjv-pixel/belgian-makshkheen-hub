@@ -14,6 +14,8 @@ const ProfileTab = () => {
   const { roles, isAdmin, isSuperAdmin } = useUserRole();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
+  const [showCreatePost, setShowCreatePost] = useState(false);
+  const [postRefreshKey, setPostRefreshKey] = useState(0);
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
