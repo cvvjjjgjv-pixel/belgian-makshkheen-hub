@@ -86,9 +86,11 @@ const Stories = () => {
     try {
       const ext = selectedFile.name.split(".").pop();
       const path = `${user.id}/${Date.now()}.${ext}`;
-      const { error: uploadError } = await supabase.storage
+      console.log("Uploading story to path:", path);
+      const { error: uploadError, data: uploadData } = await supabase.storage
         .from("stories")
-        .upload(path, selectedFile);
+        .upload(path, selectedFile, { upsert: true });
+      console.log("Upload result:", { uploadError, uploadData });
       if (uploadError) throw uploadError;
 
       const { data: { publicUrl } } = supabase.storage
