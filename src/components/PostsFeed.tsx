@@ -44,39 +44,31 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
   };
 
   const fetchPosts = useCallback(async () => {
-    const { data, error } = await supabase
+    // Fetch posts and profiles separately to avoid FK hint cache issues
+    const { data: postsData } = await supabase
       .from("posts")
-      .select("*, profile:profiles!posts_user_id_fkey(display_name, avatar_url)")
+      .select("*")
       .order("created_at", { ascending: false })
       .limit(50);
 
-    if (!error && data) {
-      // The join may fail due to missing FK name, fallback to manual join
-      setPosts(data as any);
+    if (postsData && postsData.length > 0) {
+      const userIds = [...new Set(postsData.map((p) => p.user_id))];
+      const { data: profilesData } = await supabase
+        .from("profiles")
+        .select("user_id, display_name, avatar_url")
+        .in("user_id", userIds);
+
+      const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]) || []);
+      setPosts(
+        postsData.map((p) => ({
+          ...p,
+          profile: profileMap.get(p.user_id) || { display_name: "Utilisateur", avatar_url: null },
+        }))
+      );
     } else {
-      // Fallback: fetch posts then profiles separately
-      const { data: postsData } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (postsData) {
-        const userIds = [...new Set(postsData.map((p) => p.user_id))];
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("user_id, display_name, avatar_url")
-          .in("user_id", userIds);
-
-        const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]) || []);
-        setPosts(
-          postsData.map((p) => ({
-            ...p,
-            profile: profileMap.get(p.user_id) || { display_name: "Utilisateur", avatar_url: null },
-          }))
-        );
-      }
+      setPosts([]);
     }
+
     setLoading(false);
   }, []);
 
