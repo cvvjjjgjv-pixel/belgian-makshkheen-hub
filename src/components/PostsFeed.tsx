@@ -69,33 +69,6 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
       setPosts([]);
     }
 
-    if (!error && data) {
-      // The join may fail due to missing FK name, fallback to manual join
-      setPosts(data as any);
-    } else {
-      // Fallback: fetch posts then profiles separately
-      const { data: postsData } = await supabase
-        .from("posts")
-        .select("*")
-        .order("created_at", { ascending: false })
-        .limit(50);
-
-      if (postsData) {
-        const userIds = [...new Set(postsData.map((p) => p.user_id))];
-        const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("user_id, display_name, avatar_url")
-          .in("user_id", userIds);
-
-        const profileMap = new Map(profilesData?.map((p) => [p.user_id, p]) || []);
-        setPosts(
-          postsData.map((p) => ({
-            ...p,
-            profile: profileMap.get(p.user_id) || { display_name: "Utilisateur", avatar_url: null },
-          }))
-        );
-      }
-    }
     setLoading(false);
   }, []);
 
