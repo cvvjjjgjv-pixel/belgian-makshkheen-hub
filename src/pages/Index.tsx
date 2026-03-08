@@ -54,6 +54,7 @@ const Index = () => {
               <>
                 <Stories />
                 <LiveMatchCard />
+                <MagicPrediction />
                 <CreatePostForm onPostCreated={() => setRefreshKey((k) => k + 1)} />
                 <PostsFeed refreshKey={refreshKey} />
               </>
