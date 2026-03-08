@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Settings, ChevronRight, Trophy, Heart, MessageSquare, Star, LogOut, Edit3, X, Check, Shield, Crown } from "lucide-react";
+import { Settings, ChevronRight, Trophy, Heart, MessageSquare, Star, LogOut, Edit3, X, Check, Shield, Crown, Camera } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -32,6 +32,7 @@ const ProfileTab = () => {
   const [commentCount, setCommentCount] = useState(0);
   const [badgeCount, setBadgeCount] = useState(0);
   const [userRank, setUserRank] = useState("-");
+  const [uploading, setUploading] = useState(false);
 
   // Fetch counts
   useEffect(() => {
@@ -62,6 +63,45 @@ const ProfileTab = () => {
 
     fetchCounts();
   }, [user, subView]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("L'image ne doit pas dépasser 5 Mo");
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop();
+      const path = `${user.id}/avatar.${ext}`;
+
+      // Delete old avatar if exists
+      await supabase.storage.from("avatars").remove([path]);
+
+      const { error: uploadError } = await supabase.storage
+        .from("avatars")
+        .upload(path, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      const { data: { publicUrl } } = supabase.storage
+        .from("avatars")
+        .getPublicUrl(path);
+
+      // Add cache buster
+      const avatarUrl = `${publicUrl}?t=${Date.now()}`;
+      await updateProfile({ avatar_url: avatarUrl });
+      toast.success("Photo de profil mise à jour !");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Erreur lors de l'upload");
+    } finally {
+      setUploading(false);
+    }
+  };
 
   if (!user) {
     return (
@@ -110,6 +150,8 @@ const ProfileTab = () => {
   };
 
   const memberSince = profile?.created_at ? new Date(profile.created_at).getFullYear() : new Date().getFullYear();
+  const avatarUrl = profile?.avatar_url || "";
+  const hasAvatar = avatarUrl && avatarUrl.length > 5;
 
   const menuItems = [
     { icon: Heart, label: "Mes favoris", count: String(favCount), view: "favorites" as SubView },
@@ -134,10 +176,31 @@ const ProfileTab = () => {
           </div>
         )}
 
-        <div className="w-24 h-24 rounded-full mx-auto mb-3 story-ring-gradient p-[3px]">
-          <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center border-2 border-background text-2xl font-bold text-accent">
-            {(profile?.display_name || "?")[0].toUpperCase()}
+        {/* Avatar with upload */}
+        <div className="relative w-24 h-24 mx-auto mb-3">
+          <div className="w-24 h-24 rounded-full story-ring-gradient p-[3px]">
+            {hasAvatar ? (
+              <img
+                src={avatarUrl}
+                alt="Avatar"
+                className="w-full h-full rounded-full object-cover border-2 border-background"
+              />
+            ) : (
+              <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center border-2 border-background text-2xl font-bold text-accent">
+                {(profile?.display_name || "?")[0].toUpperCase()}
+              </div>
+            )}
           </div>
+          <label className={`absolute bottom-0 right-0 w-8 h-8 rounded-full bg-accent flex items-center justify-center cursor-pointer shadow-lg border-2 border-background ${uploading ? "opacity-50 pointer-events-none" : ""}`}>
+            <Camera className="w-4 h-4 text-accent-foreground" />
+            <input
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={handleAvatarUpload}
+              disabled={uploading}
+            />
+          </label>
         </div>
 
         {editing ? (
