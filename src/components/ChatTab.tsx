@@ -194,7 +194,7 @@ const ChatTab = () => {
   const isNewAuthor = (i: number) => i === 0 || messages[i].user_id !== messages[i - 1].user_id;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
+    <div className="flex flex-col h-[calc(100dvh-140px)]">
       {/* Chat header */}
       <div className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-bold text-foreground">Chat Général 🔴🟡</h2>
