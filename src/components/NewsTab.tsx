@@ -28,7 +28,7 @@ const NewsTab = () => {
     try {
       const { data, error: fnError } = await supabase.functions.invoke("gnews-proxy", {
         body: {
-          q: "EST Tunis OR Espérance Sportive Tunis OR football Tunisie",
+          q: "Taraji OR Espérance Tunis OR الترجي",
           lang: "fr",
           max: 10,
         },
