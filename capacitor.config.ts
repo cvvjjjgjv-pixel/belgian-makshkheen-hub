@@ -1,7 +1,7 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.277dd843618e46cdbcdccc84870532b3',
+  appId: 'app.lovable.belgianmakshkheenhub',
   appName: 'Makshkheen Hub',
   webDir: 'dist',
   server: {
