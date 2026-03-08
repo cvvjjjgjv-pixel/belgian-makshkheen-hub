@@ -7,6 +7,7 @@ import Stories from "@/components/Stories";
 import LiveMatchCard from "@/components/LiveMatchCard";
 import CreatePostForm from "@/components/CreatePostForm";
 import PostsFeed from "@/components/PostsFeed";
+import MagicPrediction from "@/components/MagicPrediction";
 import TVTab from "@/components/TVTab";
 import ChatTab from "@/components/ChatTab";
 import ProfileTab from "@/components/ProfileTab";
