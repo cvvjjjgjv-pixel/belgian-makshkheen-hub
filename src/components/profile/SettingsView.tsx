@@ -1,5 +1,5 @@
-import { useState, useEffect } from "react";
-import { ArrowLeft, Settings, Bell, Moon, Globe, Save } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { ArrowLeft, Settings, Bell, Moon, Globe, Save, LogOut } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -28,11 +28,26 @@ const SettingsView = ({ onBack }: { onBack: () => void }) => {
         setDarkMode(data.dark_mode);
         setLanguage(data.language);
       }
+      // Apply theme on load
+      applyTheme(data?.dark_mode ?? true);
       setLoading(false);
     };
 
     fetchSettings();
   }, [user]);
+
+  const applyTheme = (isDark: boolean) => {
+    if (isDark) {
+      document.documentElement.classList.remove("light-mode");
+    } else {
+      document.documentElement.classList.add("light-mode");
+    }
+  };
+
+  const handleDarkModeChange = (value: boolean) => {
+    setDarkMode(value);
+    applyTheme(value);
+  };
 
   const saveSettings = async () => {
     if (!user) return;
@@ -65,6 +80,11 @@ const SettingsView = ({ onBack }: { onBack: () => void }) => {
 
     setSaving(false);
     toast.success("Paramètres sauvegardés !");
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    toast.success("Déconnexion réussie");
   };
 
   if (loading) {
@@ -109,7 +129,7 @@ const SettingsView = ({ onBack }: { onBack: () => void }) => {
               <p className="text-[10px] text-muted-foreground">Apparence de l'application</p>
             </div>
           </div>
-          <Switch checked={darkMode} onCheckedChange={setDarkMode} />
+          <Switch checked={darkMode} onCheckedChange={handleDarkModeChange} />
         </div>
 
         {/* Language */}
@@ -145,6 +165,14 @@ const SettingsView = ({ onBack }: { onBack: () => void }) => {
         >
           <Save className="w-4 h-4" />
           {saving ? "Sauvegarde..." : "Sauvegarder"}
+        </button>
+
+        <button
+          onClick={handleLogout}
+          className="w-full flex items-center justify-center gap-2 p-4 rounded-2xl bg-destructive/10 border border-destructive/30 text-destructive font-bold text-sm"
+        >
+          <LogOut className="w-4 h-4" />
+          Se déconnecter
         </button>
       </div>
     </div>
