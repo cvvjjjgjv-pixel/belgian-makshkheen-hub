@@ -197,9 +197,13 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
               )}
             </div>
 
-            {/* Image */}
+            {/* Media */}
             {post.image_url && (
-              <img src={post.image_url} alt="Post" className="w-full aspect-[4/3] object-cover" />
+              post.image_url.match(/\.(mp4|webm|mov|avi)(\?|$)/i) ? (
+                <video src={post.image_url} controls className="w-full aspect-video object-cover bg-secondary" />
+              ) : (
+                <img src={post.image_url} alt="Post" className="w-full aspect-[4/3] object-cover" />
+              )
             )}
 
             {/* Content */}
