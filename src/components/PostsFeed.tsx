@@ -32,6 +32,7 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
   const { isAdmin } = useUserRole();
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
