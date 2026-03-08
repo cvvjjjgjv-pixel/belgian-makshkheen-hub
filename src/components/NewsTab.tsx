@@ -86,7 +86,24 @@ const NewsTab = () => {
         </button>
       </div>
 
-      {/* Loading skeleton */}
+      {/* Category filters */}
+      <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              activeCategory === cat.id
+                ? "bg-accent text-accent-foreground border-accent"
+                : "bg-card text-muted-foreground border-border hover:border-accent/40"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+
       {loading && (
         <div className="space-y-3 px-4">
           {[1, 2, 3, 4].map((i) => (
