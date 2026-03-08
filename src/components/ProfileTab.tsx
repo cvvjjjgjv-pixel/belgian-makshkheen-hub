@@ -1,12 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Settings, ChevronRight, Trophy, Heart, MessageSquare, Star, LogOut, Edit3, X, Check, Shield, Crown } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useProfile } from "@/hooks/useProfile";
 import { useUserRole } from "@/hooks/useUserRole";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 import UserPostsManager from "./UserPostsManager";
 import CreatePostForm from "./CreatePostForm";
+import FavoritesView from "./profile/FavoritesView";
+import RankingView from "./profile/RankingView";
+import MyCommentsView from "./profile/MyCommentsView";
+import BadgesView from "./profile/BadgesView";
+import SettingsView from "./profile/SettingsView";
+
+type SubView = null | "favorites" | "ranking" | "comments" | "badges" | "settings";
 
 const ProfileTab = () => {
   const { user, signOut } = useAuth();
@@ -19,15 +27,47 @@ const ProfileTab = () => {
   const [editName, setEditName] = useState("");
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
+  const [subView, setSubView] = useState<SubView>(null);
+  const [favCount, setFavCount] = useState(0);
+  const [commentCount, setCommentCount] = useState(0);
+  const [badgeCount, setBadgeCount] = useState(0);
+  const [userRank, setUserRank] = useState("-");
+
+  // Fetch counts
+  useEffect(() => {
+    if (!user) return;
+
+    const fetchCounts = async () => {
+      const [{ count: favs }, { count: comments }, { count: badges }] = await Promise.all([
+        supabase.from("favorites").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("comments").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("user_badges").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+      ]);
+      setFavCount(favs || 0);
+      setCommentCount(comments || 0);
+      setBadgeCount(badges || 0);
+
+      // Calculate rank
+      const { data: posts } = await supabase.from("posts").select("user_id, likes_count");
+      if (posts) {
+        const userScores = new Map<string, number>();
+        posts.forEach((p: any) => {
+          userScores.set(p.user_id, (userScores.get(p.user_id) || 0) + 10 + (p.likes_count || 0) * 5);
+        });
+        const sorted = [...userScores.entries()].sort((a, b) => b[1] - a[1]);
+        const rank = sorted.findIndex(([uid]) => uid === user.id);
+        setUserRank(rank >= 0 ? `#${rank + 1}` : "-");
+      }
+    };
+
+    fetchCounts();
+  }, [user, subView]);
 
   if (!user) {
     return (
       <div className="p-8 text-center">
         <p className="text-muted-foreground mb-4">Connecte-toi pour voir ton profil</p>
-        <button
-          onClick={() => navigate("/auth")}
-          className="px-6 py-3 rounded-xl bg-accent text-accent-foreground font-bold text-sm"
-        >
+        <button onClick={() => navigate("/auth")} className="px-6 py-3 rounded-xl bg-accent text-accent-foreground font-bold text-sm">
           Se connecter
         </button>
       </div>
@@ -43,6 +83,13 @@ const ProfileTab = () => {
     );
   }
 
+  // Sub-views
+  if (subView === "favorites") return <FavoritesView onBack={() => setSubView(null)} />;
+  if (subView === "ranking") return <RankingView onBack={() => setSubView(null)} />;
+  if (subView === "comments") return <MyCommentsView onBack={() => setSubView(null)} />;
+  if (subView === "badges") return <BadgesView onBack={() => setSubView(null)} />;
+  if (subView === "settings") return <SettingsView onBack={() => setSubView(null)} />;
+
   const startEdit = () => {
     setEditName(profile?.display_name || "");
     setEditBio(profile?.bio || "");
@@ -51,17 +98,9 @@ const ProfileTab = () => {
   };
 
   const saveEdit = async () => {
-    const error = await updateProfile({
-      display_name: editName,
-      bio: editBio,
-      location: editLocation,
-    });
-    if (error) {
-      toast.error("Erreur lors de la mise à jour");
-    } else {
-      toast.success("Profil mis à jour!");
-      setEditing(false);
-    }
+    const error = await updateProfile({ display_name: editName, bio: editBio, location: editLocation });
+    if (error) { toast.error("Erreur lors de la mise à jour"); }
+    else { toast.success("Profil mis à jour!"); setEditing(false); }
   };
 
   const handleSignOut = async () => {
@@ -70,9 +109,15 @@ const ProfileTab = () => {
     toast.success("Déconnecté!");
   };
 
-  const memberSince = profile?.created_at
-    ? new Date(profile.created_at).getFullYear()
-    : new Date().getFullYear();
+  const memberSince = profile?.created_at ? new Date(profile.created_at).getFullYear() : new Date().getFullYear();
+
+  const menuItems = [
+    { icon: Heart, label: "Mes favoris", count: String(favCount), view: "favorites" as SubView },
+    { icon: Trophy, label: "Classement", count: userRank, view: "ranking" as SubView },
+    { icon: MessageSquare, label: "Mes commentaires", count: String(commentCount), view: "comments" as SubView },
+    { icon: Star, label: "Badges", count: String(badgeCount), view: "badges" as SubView },
+    { icon: Settings, label: "Paramètres", count: undefined, view: "settings" as SubView },
+  ];
 
   return (
     <div className="pb-4">
@@ -84,12 +129,8 @@ const ProfileTab = () => {
           </button>
         ) : (
           <div className="absolute top-4 right-4 flex gap-2">
-            <button onClick={() => setEditing(false)} className="text-muted-foreground">
-              <X className="w-5 h-5" />
-            </button>
-            <button onClick={saveEdit} className="text-accent">
-              <Check className="w-5 h-5" />
-            </button>
+            <button onClick={() => setEditing(false)} className="text-muted-foreground"><X className="w-5 h-5" /></button>
+            <button onClick={saveEdit} className="text-accent"><Check className="w-5 h-5" /></button>
           </div>
         )}
 
@@ -101,24 +142,9 @@ const ProfileTab = () => {
 
         {editing ? (
           <div className="space-y-2 max-w-xs mx-auto">
-            <input
-              value={editName}
-              onChange={(e) => setEditName(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent"
-              placeholder="Nom d'affichage"
-            />
-            <input
-              value={editBio}
-              onChange={(e) => setEditBio(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent"
-              placeholder="Bio"
-            />
-            <input
-              value={editLocation}
-              onChange={(e) => setEditLocation(e.target.value)}
-              className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent"
-              placeholder="Localisation"
-            />
+            <input value={editName} onChange={(e) => setEditName(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Nom d'affichage" />
+            <input value={editBio} onChange={(e) => setEditBio(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Bio" />
+            <input value={editLocation} onChange={(e) => setEditLocation(e.target.value)} className="w-full px-3 py-2 rounded-xl bg-secondary border border-border text-foreground text-sm text-center focus:outline-none focus:ring-2 focus:ring-accent" placeholder="Localisation" />
           </div>
         ) : (
           <>
@@ -175,20 +201,15 @@ const ProfileTab = () => {
 
       {/* Menu */}
       <div className="px-4 space-y-2">
-        {[
-          { icon: Heart, label: "Mes favoris", count: "0" },
-          { icon: Trophy, label: "Classement", count: "-" },
-          { icon: MessageSquare, label: "Mes commentaires", count: "0" },
-          { icon: Star, label: "Badges", count: "0" },
-          { icon: Settings, label: "Paramètres" },
-        ].map((item, i) => (
+        {menuItems.map((item, i) => (
           <button
             key={i}
+            onClick={() => setSubView(item.view)}
             className="w-full flex items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:bg-secondary transition-colors"
           >
             <item.icon className="w-5 h-5 text-accent" />
             <span className="flex-1 text-left text-sm font-medium text-foreground">{item.label}</span>
-            {item.count && <span className="text-xs text-muted-foreground">{item.count}</span>}
+            {item.count !== undefined && <span className="text-xs text-muted-foreground">{item.count}</span>}
             <ChevronRight className="w-4 h-4 text-muted-foreground" />
           </button>
         ))}
