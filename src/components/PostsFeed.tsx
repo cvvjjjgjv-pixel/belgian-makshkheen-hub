@@ -83,10 +83,32 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
     if (data) setLikedPosts(new Set(data.map((l) => l.post_id)));
   }, [user]);
 
+  const fetchFollowing = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("followers")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    if (data) setFollowingSet(new Set(data.map((f) => f.following_id)));
+  }, [user]);
+
   useEffect(() => {
     fetchPosts();
     fetchLikes();
-  }, [refreshKey, fetchPosts, fetchLikes]);
+    fetchFollowing();
+  }, [refreshKey, fetchPosts, fetchLikes, fetchFollowing]);
+
+  const toggleFollow = async (targetId: string) => {
+    if (!user || targetId === user.id) return;
+    const isFollowing = followingSet.has(targetId);
+    if (isFollowing) {
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId);
+      setFollowingSet((prev) => { const s = new Set(prev); s.delete(targetId); return s; });
+    } else {
+      await supabase.from("followers").insert({ follower_id: user.id, following_id: targetId });
+      setFollowingSet((prev) => new Set(prev).add(targetId));
+    }
+  };
 
   // Realtime subscription
   useEffect(() => {
