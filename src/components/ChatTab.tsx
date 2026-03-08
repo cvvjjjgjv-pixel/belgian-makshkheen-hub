@@ -220,14 +220,14 @@ const ChatTab = () => {
                 <div className="w-7 flex-shrink-0" />
               ) : null}
 
-              <div className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+              <div className={`max-w-[80%] min-w-0 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
                 {showAuthor && !isMine && (
                   <span className="text-[10px] font-semibold text-muted-foreground mb-0.5 ml-1">{msg.author_name}</span>
                 )}
 
                 <div className="group relative">
                   <div
-                    className={`px-3.5 py-2 rounded-2xl ${
+                    className={`px-3 py-2 rounded-2xl break-words ${
                       isMine
                         ? "bg-accent text-accent-foreground rounded-br-sm"
                         : "bg-secondary text-foreground rounded-bl-sm"
