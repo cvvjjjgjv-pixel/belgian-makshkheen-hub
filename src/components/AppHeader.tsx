@@ -111,6 +111,11 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
                 <span className="text-[9px] text-muted-foreground hidden sm:inline">{weather.city}</span>
               </div>
             )}
+            {isAdmin && (
+              <button onClick={() => navigate("/admin")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Dashboard Admin">
+                <Shield className="w-5 h-5" />
+              </button>
+            )}
             <button onClick={() => setShowNotifs(true)} className="relative text-foreground">
               <Bell className="w-5 h-5" />
               {unreadCount > 0 && (
