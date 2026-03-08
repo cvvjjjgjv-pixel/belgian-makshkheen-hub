@@ -11,10 +11,12 @@ const MagicPrediction = () => {
   const [asked, setAsked] = useState(false);
 
   const quickQuestions = [
-    "⚽ Qui va gagner la Champions League ?",
-    "🏆 L'Espérance sera champion ?",
-    "🌟 Quel joueur va exploser cette saison ?",
-    "🔴🟡 Le prochain match, victoire ?",
+    "💕 Comment sera ma vie amoureuse ?",
+    "💰 Vais-je devenir riche ?",
+    "🍀 Qu'est-ce qui m'attend cette semaine ?",
+    "✈️ Quel voyage m'attend bientôt ?",
+    "⚽ Mon équipe va gagner ?",
+    "🌟 Quel est mon destin ?",
   ];
 
   const askMagic = async (q?: string) => {
