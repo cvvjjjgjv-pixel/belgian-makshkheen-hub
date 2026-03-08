@@ -277,7 +277,7 @@ const ProfileTab = () => {
         {menuItems.map((item, i) => (
           <button
             key={i}
-            onClick={() => setSubView(item.view)}
+            onClick={() => item.action ? item.action() : setSubView(item.view)}
             className="w-full flex items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:bg-secondary transition-colors"
           >
             <item.icon className="w-5 h-5 text-accent" />
