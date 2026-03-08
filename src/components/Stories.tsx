@@ -57,6 +57,8 @@ const Stories = () => {
   const [reactions, setReactions] = useState<Reaction[]>([]);
   const [myReaction, setMyReaction] = useState<string | null>(null);
   const [showReactionAnim, setShowReactionAnim] = useState<string | null>(null);
+  const [storyViews, setStoryViews] = useState<StoryView[]>([]);
+  const [showViewers, setShowViewers] = useState(false);
 
   const fetchStories = async () => {
     const { data } = await supabase
