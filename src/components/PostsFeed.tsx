@@ -213,6 +213,19 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
                 </p>
               </div>
+              {user && post.user_id !== user.id && (
+                <button
+                  onClick={() => toggleFollow(post.user_id)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
+                    followingSet.has(post.user_id)
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-accent text-accent-foreground"
+                  }`}
+                >
+                  {followingSet.has(post.user_id) ? <UserCheck className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
+                  {followingSet.has(post.user_id) ? "Suivi" : "Suivre"}
+                </button>
+              )}
               {canDelete && (
                 <button onClick={() => deletePost(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
