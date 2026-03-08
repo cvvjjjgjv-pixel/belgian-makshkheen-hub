@@ -163,11 +163,12 @@ const ProfileTab = () => {
   const hasAvatar = avatarUrl && avatarUrl.length > 5;
 
   const menuItems = [
-    { icon: Heart, label: "Mes favoris", count: String(favCount), view: "favorites" as SubView },
-    { icon: Trophy, label: "Classement", count: userRank, view: "ranking" as SubView },
-    { icon: MessageSquare, label: "Mes commentaires", count: String(commentCount), view: "comments" as SubView },
-    { icon: Star, label: "Badges", count: String(badgeCount), view: "badges" as SubView },
-    { icon: Settings, label: "Paramètres", count: undefined, view: "settings" as SubView },
+    { icon: Heart, label: "Mes favoris", count: String(favCount), view: "favorites" as SubView, action: undefined },
+    { icon: Trophy, label: "Classement", count: userRank, view: "ranking" as SubView, action: undefined },
+    { icon: MessageSquare, label: "Mes commentaires", count: String(commentCount), view: "comments" as SubView, action: undefined },
+    { icon: Star, label: "Badges", count: String(badgeCount), view: "badges" as SubView, action: undefined },
+    { icon: Settings, label: "Paramètres", count: undefined, view: "settings" as SubView, action: undefined },
+    ...(isAdmin ? [{ icon: Shield, label: "Panel Admin", count: undefined, view: null as SubView, action: () => navigate("/admin") }] : []),
   ];
 
   return (
@@ -276,7 +277,7 @@ const ProfileTab = () => {
         {menuItems.map((item, i) => (
           <button
             key={i}
-            onClick={() => setSubView(item.view)}
+            onClick={() => item.action ? item.action() : setSubView(item.view)}
             className="w-full flex items-center gap-3 p-4 rounded-2xl bg-card border border-border hover:bg-secondary transition-colors"
           >
             <item.icon className="w-5 h-5 text-accent" />
