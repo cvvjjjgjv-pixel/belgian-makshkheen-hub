@@ -12,7 +12,6 @@ Deno.serve(async (req) => {
   console.log('GNEWS_API_KEY present:', !!GNEWS_API_KEY, 'length:', GNEWS_API_KEY?.length ?? 0);
 
   if (!GNEWS_API_KEY) {
-    console.error('GNEWS_API_KEY is not set in environment');
     return new Response(
       JSON.stringify({ error: 'GNEWS_API_KEY not configured on server' }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
@@ -20,28 +19,58 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { q, lang = 'fr', max = 10 } = await req.json();
+    const { q, lang = 'fr', max = 10, endpoint = 'search' } = await req.json();
 
-    const url = new URL('https://gnews.io/api/v4/search');
-    url.searchParams.set('q', q || 'EST Tunis OR Espérance Sportive Tunis');
-    url.searchParams.set('lang', lang);
-    url.searchParams.set('country', 'any');
-    url.searchParams.set('max', String(max));
-    url.searchParams.set('apikey', GNEWS_API_KEY);
+    // Try search first, fallback to top-headlines if no results
+    const searchQueries = [
+      q || 'Espérance Tunis',
+      'Taraji OR Espérance sportive',
+      'football tunisien',
+    ];
 
-    console.log('Calling GNews URL (without key):', url.toString().replace(GNEWS_API_KEY, 'REDACTED'));
-    const response = await fetch(url.toString());
-    const data = await response.json();
-    console.log('GNews response status:', response.status, 'data:', JSON.stringify(data).slice(0, 200));
+    let articles: any[] = [];
 
-    if (!response.ok) {
-      return new Response(
-        JSON.stringify({ error: data.errors?.[0] || 'GNews API error', gnewsStatus: response.status }),
-        { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
+    for (const query of searchQueries) {
+      if (articles.length > 0) break;
+
+      const url = new URL(`https://gnews.io/api/v4/search`);
+      url.searchParams.set('q', query);
+      url.searchParams.set('lang', lang);
+      url.searchParams.set('country', 'any');
+      url.searchParams.set('max', String(max));
+      url.searchParams.set('apikey', GNEWS_API_KEY);
+
+      console.log('Trying query:', query);
+      const response = await fetch(url.toString());
+      const data = await response.json();
+      console.log('Response for query:', query, 'articles:', data.totalArticles ?? 0);
+
+      if (response.ok && data.articles?.length > 0) {
+        articles = data.articles;
+        break;
+      }
     }
 
-    return new Response(JSON.stringify(data), {
+    // If still no results, try top-headlines for Tunisia/sports
+    if (articles.length === 0) {
+      const url = new URL('https://gnews.io/api/v4/top-headlines');
+      url.searchParams.set('topic', 'sports');
+      url.searchParams.set('lang', lang);
+      url.searchParams.set('country', 'tn');
+      url.searchParams.set('max', String(max));
+      url.searchParams.set('apikey', GNEWS_API_KEY);
+
+      console.log('Falling back to top-headlines sports/tn');
+      const response = await fetch(url.toString());
+      const data = await response.json();
+      console.log('Top-headlines response:', data.totalArticles ?? 0);
+
+      if (response.ok && data.articles?.length > 0) {
+        articles = data.articles;
+      }
+    }
+
+    return new Response(JSON.stringify({ articles, totalArticles: articles.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
