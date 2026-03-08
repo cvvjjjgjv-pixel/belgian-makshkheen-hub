@@ -148,7 +148,7 @@ const Stories = () => {
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) { setViewingStory(null); return 0; }
-        return p + 2;
+        return p + 1;
       });
     }, 100);
 
@@ -387,125 +387,122 @@ const Stories = () => {
 
       {/* Story Viewer */}
       {viewingStory && (
-        <div className="fixed inset-0 z-50 bg-black flex flex-col" onClick={() => setViewingStory(null)}>
+        <div className="fixed inset-0 z-[100] bg-black flex flex-col">
+          {/* Progress bar */}
           <div className="absolute top-0 left-0 right-0 h-1 bg-muted z-10">
             <div className="h-full bg-accent transition-all duration-100" style={{ width: `${progress}%` }} />
           </div>
-          <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-3">
+
+          {/* Header */}
+          <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
             <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-accent">
               {getInitial(viewingStory)}
             </div>
             <div className="flex-1">
-              <span className="text-foreground text-sm font-medium">
+              <span className="text-white text-sm font-medium">
                 {viewingStory.profile?.display_name || "Utilisateur"}
               </span>
-              <p className="text-[10px] text-muted-foreground">⏱ {timeRemaining(viewingStory.expires_at)}</p>
+              <p className="text-[10px] text-gray-400">⏱ {timeRemaining(viewingStory.expires_at)}</p>
             </div>
             {viewingStory.user_id === user?.id && (
               <button
-                onClick={(e) => { e.stopPropagation(); deleteStory(viewingStory.id); }}
+                onClick={() => deleteStory(viewingStory.id)}
                 className="p-2 rounded-full bg-destructive/20 text-destructive"
               >
                 <Trash2 className="w-5 h-5" />
               </button>
             )}
             <button onClick={() => setViewingStory(null)}>
-              <X className="w-6 h-6 text-foreground" />
+              <X className="w-6 h-6 text-white" />
             </button>
           </div>
-          <img src={viewingStory.image_url} alt="Story" className="w-full h-full object-contain" onClick={(e) => e.stopPropagation()} />
+
+          {/* Story image - tap left/right to navigate, center area for pause */}
+          <div className="flex-1 flex items-center justify-center" onClick={() => setViewingStory(null)}>
+            <img src={viewingStory.image_url} alt="Story" className="w-full h-full object-contain" />
+          </div>
 
           {/* Reaction animation */}
           {showReactionAnim && (
-            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-30">
               <span className="text-7xl animate-bounce">{showReactionAnim}</span>
             </div>
           )}
 
           {/* Caption */}
           {viewingStory.caption && (
-            <div className="absolute bottom-24 left-4 right-4 text-center">
-              <p className="text-foreground text-sm bg-black/60 rounded-xl px-4 py-2 inline-block">
+            <div className="absolute bottom-28 left-4 right-4 text-center z-10">
+              <p className="text-white text-sm bg-black/60 rounded-xl px-4 py-2 inline-block">
                 {viewingStory.caption}
               </p>
             </div>
           )}
 
-          {/* Views & Reactions for story owner */}
-          {viewingStory.user_id === user?.id && (
-            <div className="absolute bottom-0 left-0 right-0 z-10" onClick={(e) => e.stopPropagation()}>
-              {/* Viewers panel (expandable) */}
-              {showViewers && (
-                <div className="bg-black/80 backdrop-blur-md rounded-t-2xl max-h-[50vh] overflow-y-auto px-4 pb-2 pt-3">
-                  <p className="text-xs text-muted-foreground font-semibold mb-3 uppercase tracking-wide">
-                    Vues ({storyViews.length})
-                  </p>
-                  {storyViews.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">Aucune vue pour le moment</p>
-                  ) : (
-                    <div className="space-y-2">
-                      {storyViews.map((v) => (
-                        <div key={v.id} className="flex items-center gap-3">
-                          <img
-                            src={v.viewer_avatar || `https://ui-avatars.com/api/?name=${v.viewer_name}&background=random&size=32`}
-                            alt=""
-                            className="w-8 h-8 rounded-full object-cover"
-                          />
-                          <span className="text-sm text-foreground flex-1">{v.viewer_name}</span>
-                          <span className="text-[10px] text-muted-foreground">
-                            {new Date(v.viewed_at).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+          {/* Bottom section - always visible */}
+          <div className="absolute bottom-0 left-0 right-0 z-20" onClick={(e) => e.stopPropagation()}>
+            {/* Reaction counts */}
+            {reactions.length > 0 && (
+              <div className="flex justify-center gap-2 mb-2 px-4">
+                {Object.entries(reactionCounts).map(([emoji, count]) => (
+                  <span key={emoji} className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                    {emoji} <span className="text-white font-bold">{count}</span>
+                  </span>
+                ))}
+              </div>
+            )}
 
-              {/* Bottom bar: eye count + reactions */}
-              <div className="bg-black/70 backdrop-blur-sm px-4 py-3 flex items-center justify-between">
-                <button
-                  onClick={() => setShowViewers((v) => !v)}
-                  className="flex items-center gap-2 text-foreground"
-                >
-                  <Eye className="w-4 h-4" />
-                  <span className="text-sm font-medium">{storyViews.length}</span>
-                  <ChevronUp className={`w-4 h-4 transition-transform ${showViewers ? "rotate-180" : ""}`} />
-                </button>
-                {reactions.length > 0 && (
-                  <div className="flex gap-2">
-                    {Object.entries(reactionCounts).map(([emoji, count]) => (
-                      <span key={emoji} className="bg-white/20 rounded-full px-2 py-0.5 text-xs">
-                        {emoji} <span className="text-white font-bold">{count}</span>
-                      </span>
-                    ))}
+            {/* Owner: views bar */}
+            {viewingStory.user_id === user?.id && (
+              <>
+                {showViewers && (
+                  <div className="bg-black/80 backdrop-blur-md rounded-t-2xl max-h-[40vh] overflow-y-auto px-4 pb-2 pt-3">
+                    <p className="text-xs text-gray-400 font-semibold mb-3 uppercase tracking-wide">
+                      Vues ({storyViews.length})
+                    </p>
+                    {storyViews.length === 0 ? (
+                      <p className="text-sm text-gray-400 text-center py-4">Aucune vue pour le moment</p>
+                    ) : (
+                      <div className="space-y-2">
+                        {storyViews.map((v) => (
+                          <div key={v.id} className="flex items-center gap-3">
+                            <img
+                              src={v.viewer_avatar || `https://ui-avatars.com/api/?name=${v.viewer_name}&background=random&size=32`}
+                              alt=""
+                              className="w-8 h-8 rounded-full object-cover"
+                            />
+                            <span className="text-sm text-white flex-1">{v.viewer_name}</span>
+                            <span className="text-[10px] text-gray-400">
+                              {new Date(v.viewed_at).toLocaleTimeString("fr", { hour: "2-digit", minute: "2-digit" })}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
-              </div>
-            </div>
-          )}
-
-          {/* Emoji reaction bar (for viewers) */}
-          {user && viewingStory.user_id !== user.id && (
-            <div className="absolute bottom-0 left-0 right-0 z-20" onClick={(e) => e.stopPropagation()}>
-              {/* Show existing reaction counts */}
-              {reactions.length > 0 && (
-                <div className="flex justify-center gap-2 mb-2 px-4">
-                  {Object.entries(reactionCounts).map(([emoji, count]) => (
-                    <span key={emoji} className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
-                      {emoji} <span className="text-white font-bold">{count}</span>
-                    </span>
-                  ))}
+                <div className="bg-black/70 backdrop-blur-sm px-4 py-3 flex items-center justify-center">
+                  <button
+                    onClick={() => setShowViewers((v) => !v)}
+                    className="flex items-center gap-2 text-white"
+                  >
+                    <Eye className="w-4 h-4" />
+                    <span className="text-sm font-medium">{storyViews.length}</span>
+                    <ChevronUp className={`w-4 h-4 transition-transform ${showViewers ? "rotate-180" : ""}`} />
+                  </button>
                 </div>
-              )}
+              </>
+            )}
+
+            {/* Viewer: emoji reaction bar */}
+            {user && viewingStory.user_id !== user.id && (
               <div className="bg-black/70 backdrop-blur-sm px-4 py-4 flex justify-center gap-3">
                 {REACTION_EMOJIS.map((emoji) => (
                   <button
                     key={emoji}
                     onClick={() => sendReaction(emoji)}
-                    className={`text-2xl p-2 rounded-full transition-all ${
+                    className={`text-2xl p-2 rounded-full transition-all active:scale-90 ${
                       myReaction === emoji
-                        ? "bg-white/30 scale-125 ring-2 ring-accent"
+                        ? "bg-white/30 scale-125 ring-2 ring-yellow-400"
                         : "bg-white/10 hover:bg-white/20 hover:scale-110"
                     }`}
                   >
@@ -513,8 +510,8 @@ const Stories = () => {
                   </button>
                 ))}
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       )}
     </>
