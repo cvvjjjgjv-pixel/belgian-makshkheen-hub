@@ -93,9 +93,9 @@ const Stories = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user]);
 
-  // Fetch reactions when viewing a story
+  // Fetch reactions & views when viewing a story
   useEffect(() => {
-    if (!viewingStory) { setProgress(0); setReactions([]); setMyReaction(null); return; }
+    if (!viewingStory) { setProgress(0); setReactions([]); setMyReaction(null); setStoryViews([]); setShowViewers(false); return; }
     
     const fetchReactions = async () => {
       const { data } = await supabase
@@ -108,7 +108,42 @@ const Stories = () => {
         setMyReaction(mine ? mine.emoji : null);
       }
     };
+
+    const recordView = async () => {
+      if (!user || viewingStory.user_id === user.id) return;
+      await supabase.from("story_views").upsert(
+        { story_id: viewingStory.id, user_id: user.id },
+        { onConflict: "story_id,user_id" }
+      );
+    };
+
+    const fetchViews = async () => {
+      if (viewingStory.user_id !== user?.id) return;
+      const { data } = await supabase
+        .from("story_views")
+        .select("*")
+        .eq("story_id", viewingStory.id)
+        .order("viewed_at", { ascending: false });
+      if (data && data.length > 0) {
+        const userIds = [...new Set(data.map((v: any) => v.user_id))];
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("user_id, display_name, avatar_url")
+          .in("user_id", userIds);
+        const profileMap = new Map(profiles?.map((p) => [p.user_id, p]) || []);
+        setStoryViews(data.map((v: any) => ({
+          ...v,
+          viewer_name: profileMap.get(v.user_id)?.display_name || "Utilisateur",
+          viewer_avatar: profileMap.get(v.user_id)?.avatar_url || "",
+        })));
+      } else {
+        setStoryViews([]);
+      }
+    };
+
     fetchReactions();
+    recordView();
+    fetchViews();
 
     const interval = setInterval(() => {
       setProgress((p) => {
