@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp, UserPlus, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -32,6 +32,7 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
   const { isAdmin } = useUserRole();
   const [posts, setPosts] = useState<Post[]>([]);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
+  const [followingSet, setFollowingSet] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [expandedComments, setExpandedComments] = useState<Set<string>>(new Set());
 
@@ -82,10 +83,32 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
     if (data) setLikedPosts(new Set(data.map((l) => l.post_id)));
   }, [user]);
 
+  const fetchFollowing = useCallback(async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from("followers")
+      .select("following_id")
+      .eq("follower_id", user.id);
+    if (data) setFollowingSet(new Set(data.map((f) => f.following_id)));
+  }, [user]);
+
   useEffect(() => {
     fetchPosts();
     fetchLikes();
-  }, [refreshKey, fetchPosts, fetchLikes]);
+    fetchFollowing();
+  }, [refreshKey, fetchPosts, fetchLikes, fetchFollowing]);
+
+  const toggleFollow = async (targetId: string) => {
+    if (!user || targetId === user.id) return;
+    const isFollowing = followingSet.has(targetId);
+    if (isFollowing) {
+      await supabase.from("followers").delete().eq("follower_id", user.id).eq("following_id", targetId);
+      setFollowingSet((prev) => { const s = new Set(prev); s.delete(targetId); return s; });
+    } else {
+      await supabase.from("followers").insert({ follower_id: user.id, following_id: targetId });
+      setFollowingSet((prev) => new Set(prev).add(targetId));
+    }
+  };
 
   // Realtime subscription
   useEffect(() => {
@@ -190,6 +213,19 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                   {formatDistanceToNow(new Date(post.created_at), { addSuffix: true, locale: fr })}
                 </p>
               </div>
+              {user && post.user_id !== user.id && (
+                <button
+                  onClick={() => toggleFollow(post.user_id)}
+                  className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-semibold transition-colors ${
+                    followingSet.has(post.user_id)
+                      ? "bg-muted text-muted-foreground"
+                      : "bg-accent text-accent-foreground"
+                  }`}
+                >
+                  {followingSet.has(post.user_id) ? <UserCheck className="w-3 h-3" /> : <UserPlus className="w-3 h-3" />}
+                  {followingSet.has(post.user_id) ? "Suivi" : "Suivre"}
+                </button>
+              )}
               {canDelete && (
                 <button onClick={() => deletePost(post.id)} className="text-muted-foreground hover:text-destructive transition-colors">
                   <Trash2 className="w-4 h-4" />
