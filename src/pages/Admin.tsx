@@ -143,6 +143,15 @@ const Admin = () => {
     } catch { toast.error("Erreur"); }
   };
 
+  const clearAllChat = async () => {
+    if (!confirm("⚠️ Supprimer TOUS les messages du chat ? Cette action est irréversible.")) return;
+    try {
+      await callAdmin({ action: "clear_all_chat" });
+      setChatMessages([]);
+      toast.success("Tous les messages du chat ont été supprimés");
+    } catch { toast.error("Erreur"); }
+  };
+
   const deleteForumTopic = async (topicId: string) => {
     if (!confirm("Supprimer ce topic et toutes ses réponses ?")) return;
     try {
