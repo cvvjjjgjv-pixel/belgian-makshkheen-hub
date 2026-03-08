@@ -242,15 +242,15 @@ const ProfileTab = () => {
 
         <div className="flex justify-center gap-8 mt-4">
           <div className="text-center">
-            <p className="text-lg font-bold text-accent">0</p>
+            <p className="text-lg font-bold text-accent">{postCount}</p>
             <p className="text-xs text-muted-foreground">Posts</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-accent">0</p>
+            <p className="text-lg font-bold text-accent">{followerCount}</p>
             <p className="text-xs text-muted-foreground">Followers</p>
           </div>
           <div className="text-center">
-            <p className="text-lg font-bold text-accent">0</p>
+            <p className="text-lg font-bold text-accent">{followingCount}</p>
             <p className="text-xs text-muted-foreground">Following</p>
           </div>
         </div>
