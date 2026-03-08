@@ -1,11 +1,10 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Send, Smile, Image, Film, X, Trash2 } from "lucide-react";
+import { Send, Smile, Image, Film, X, Trash2, ChevronDown, Mic, Reply } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
-import { formatDistanceToNow } from "date-fns";
-import { fr } from "date-fns/locale";
 import { toast } from "sonner";
+import { motion, AnimatePresence } from "framer-motion";
 import EmojiPicker from "./chat/EmojiPicker";
 import GifPicker from "./chat/GifPicker";
 
@@ -29,11 +28,22 @@ const ChatTab = () => {
   const [showGif, setShowGif] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [mediaPreview, setMediaPreview] = useState<{ url: string; type: string; file?: File } | null>(null);
+  const [showScrollBtn, setShowScrollBtn] = useState(false);
+  const [replyTo, setReplyTo] = useState<ChatMessage | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  const scrollToBottom = (smooth = true) => {
+    messagesEndRef.current?.scrollIntoView({ behavior: smooth ? "smooth" : "instant" });
+  };
+
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    setShowScrollBtn(scrollHeight - scrollTop - clientHeight > 150);
   };
 
   const fetchMessages = useCallback(async () => {
@@ -73,7 +83,7 @@ const ChatTab = () => {
   }, [fetchMessages]);
 
   useEffect(() => {
-    scrollToBottom();
+    scrollToBottom(false);
   }, [messages]);
 
   // Realtime
@@ -126,15 +136,18 @@ const ChatTab = () => {
         media_url = result.url;
         media_type = result.type;
       } else {
-        // GIF
         media_url = mediaPreview.url;
         media_type = mediaPreview.type;
       }
     }
 
+    const content = replyTo
+      ? `↩️ ${replyTo.author_name}: "${replyTo.content.slice(0, 40)}${replyTo.content.length > 40 ? "..." : ""}"\n${input.trim()}`
+      : input.trim();
+
     const { error } = await supabase.from("chat_messages").insert({
       user_id: user.id,
-      content: input.trim(),
+      content,
       media_url,
       media_type,
     });
@@ -146,6 +159,7 @@ const ChatTab = () => {
 
     setInput("");
     setMediaPreview(null);
+    setReplyTo(null);
     setShowEmoji(false);
     setShowGif(false);
   };
@@ -179,6 +193,29 @@ const ChatTab = () => {
     await supabase.from("chat_messages").delete().eq("id", msgId);
   };
 
+  const formatTime = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  };
+
+  const formatDateSeparator = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    if (date.toDateString() === today.toDateString()) return "Aujourd'hui";
+    if (date.toDateString() === yesterday.toDateString()) return "Hier";
+    return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long" });
+  };
+
+  const shouldShowDateSeparator = (i: number) => {
+    if (i === 0) return true;
+    const prev = new Date(messages[i - 1].created_at).toDateString();
+    const curr = new Date(messages[i].created_at).toDateString();
+    return prev !== curr;
+  };
+
   if (!user) {
     return (
       <div className="p-8 text-center">
@@ -190,83 +227,216 @@ const ChatTab = () => {
     );
   }
 
-  // Group consecutive messages by same user
   const isNewAuthor = (i: number) => i === 0 || messages[i].user_id !== messages[i - 1].user_id;
+
+  // Check if message contains a reply quote
+  const parseReply = (content: string) => {
+    const match = content.match(/^↩️ (.+?): "(.+?)"\n([\s\S]*)$/);
+    if (match) return { replyAuthor: match[1], replyText: match[2], mainText: match[3] };
+    return null;
+  };
 
   return (
     <div className="flex flex-col h-[calc(100dvh-140px)]">
       {/* Chat header */}
-      <div className="px-4 py-3 border-b border-border">
-        <h2 className="text-sm font-bold text-foreground">Chat Général 🔴🟡</h2>
-        <p className="text-xs text-muted-foreground">{messages.length} messages</p>
+      <div className="px-4 py-3 border-b border-border bg-card/80 backdrop-blur-sm">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-foreground flex items-center gap-1.5">
+              Chat Général
+              <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+            </h2>
+            <p className="text-[11px] text-muted-foreground">{messages.length} messages</p>
+          </div>
+          <div className="flex -space-x-2">
+            {[...new Map(messages.slice(-10).map(m => [m.user_id, m])).values()].slice(0, 4).map((m) => (
+              <img
+                key={m.user_id}
+                src={m.author_avatar || `https://ui-avatars.com/api/?name=${m.author_name}&background=random&size=24`}
+                alt=""
+                className="w-6 h-6 rounded-full border-2 border-card object-cover"
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5 overscroll-contain">
+      <div
+        ref={scrollContainerRef}
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5 overscroll-contain scroll-smooth"
+      >
         {messages.map((msg, i) => {
           const isMine = msg.user_id === user.id;
           const showAuthor = isNewAuthor(i);
+          const showDate = shouldShowDateSeparator(i);
+          const reply = parseReply(msg.content);
 
           return (
-            <div key={msg.id} className={`flex ${isMine ? "flex-row-reverse" : ""} gap-2 ${showAuthor ? "mt-3" : "mt-0.5"}`}>
-              {/* Avatar */}
-              {!isMine && showAuthor ? (
-                <img
-                  src={msg.author_avatar || `https://ui-avatars.com/api/?name=${msg.author_name}&background=random&size=32`}
-                  alt=""
-                  className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-1"
-                />
-              ) : !isMine ? (
-                <div className="w-7 flex-shrink-0" />
-              ) : null}
+            <div key={msg.id}>
+              {/* Date separator */}
+              {showDate && (
+                <div className="flex items-center justify-center my-3">
+                  <span className="text-[10px] font-medium text-muted-foreground bg-muted px-3 py-1 rounded-full">
+                    {formatDateSeparator(msg.created_at)}
+                  </span>
+                </div>
+              )}
 
-              <div className={`max-w-[80%] min-w-0 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
-                {showAuthor && !isMine && (
-                  <span className="text-[10px] font-semibold text-muted-foreground mb-0.5 ml-1">{msg.author_name}</span>
-                )}
+              <motion.div
+                initial={{ opacity: 0, y: 6, scale: 0.97 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.15 }}
+                className={`flex ${isMine ? "flex-row-reverse" : ""} gap-1.5 ${showAuthor ? "mt-3" : "mt-0.5"}`}
+              >
+                {/* Avatar */}
+                {!isMine && showAuthor ? (
+                  <img
+                    src={msg.author_avatar || `https://ui-avatars.com/api/?name=${msg.author_name}&background=random&size=32`}
+                    alt=""
+                    className="w-7 h-7 rounded-full object-cover flex-shrink-0 mt-1"
+                  />
+                ) : !isMine ? (
+                  <div className="w-7 flex-shrink-0" />
+                ) : null}
 
-                <div className="group relative">
-                  <div
-                    className={`px-3 py-2 rounded-2xl break-words ${
-                      isMine
-                        ? "bg-accent text-accent-foreground rounded-br-sm"
-                        : "bg-secondary text-foreground rounded-bl-sm"
-                    }`}
-                  >
-                    {/* Media */}
-                    {msg.media_url && (
-                      <div className="mb-1.5">
-                        {msg.media_type === "video" ? (
-                          <video src={msg.media_url} controls className="rounded-xl w-full max-h-52" />
-                        ) : (
-                          <img src={msg.media_url} alt="" className="rounded-xl w-full max-h-52 object-cover cursor-pointer" loading="lazy" />
-                        )}
+                <div className={`max-w-[78%] min-w-0 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+                  {showAuthor && !isMine && (
+                    <span className="text-[10px] font-semibold text-muted-foreground mb-0.5 ml-1">{msg.author_name}</span>
+                  )}
+
+                  <div className="group relative flex items-center gap-1">
+                    {/* Action buttons - before bubble for mine */}
+                    {isMine && (
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button onClick={() => deleteMessage(msg.id)} className="p-1 rounded-full hover:bg-destructive/10">
+                          <Trash2 className="w-3 h-3 text-destructive/60 hover:text-destructive" />
+                        </button>
                       </div>
                     )}
 
-                    {msg.content && <p className="text-sm break-words">{msg.content}</p>}
-
-                    <p className={`text-[9px] mt-0.5 ${isMine ? "text-accent-foreground/50" : "text-foreground/40"}`}>
-                      {new Date(msg.created_at).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                    </p>
-                  </div>
-
-                  {/* Delete button */}
-                  {isMine && (
-                    <button
-                      onClick={() => deleteMessage(msg.id)}
-                      className="absolute -left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity"
+                    {/* Message bubble */}
+                    <div
+                      className={`px-3 py-2 rounded-2xl break-words transition-colors ${
+                        isMine
+                          ? "bg-accent text-accent-foreground rounded-br-md"
+                          : "bg-secondary text-foreground rounded-bl-md"
+                      }`}
                     >
-                      <Trash2 className="w-3.5 h-3.5 text-destructive/60 hover:text-destructive" />
-                    </button>
-                  )}
+                      {/* Reply quote */}
+                      {reply && (
+                        <div className={`mb-1.5 px-2 py-1 rounded-lg border-l-2 text-[11px] ${
+                          isMine ? "bg-accent/50 border-accent-foreground/30" : "bg-muted border-muted-foreground/30"
+                        }`}>
+                          <span className="font-semibold">{reply.replyAuthor}</span>
+                          <p className="opacity-70 truncate">{reply.replyText}</p>
+                        </div>
+                      )}
+
+                      {/* Media */}
+                      {msg.media_url && (
+                        <div className="mb-1.5">
+                          {msg.media_type === "video" ? (
+                            <video src={msg.media_url} controls className="rounded-xl w-full max-h-52" />
+                          ) : (
+                            <img
+                              src={msg.media_url}
+                              alt=""
+                              className="rounded-xl w-full max-h-52 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                              loading="lazy"
+                              onClick={() => setSelectedImage(msg.media_url)}
+                            />
+                          )}
+                        </div>
+                      )}
+
+                      {reply ? (
+                        reply.mainText && <p className="text-sm break-words">{reply.mainText}</p>
+                      ) : (
+                        msg.content && <p className="text-sm break-words">{msg.content}</p>
+                      )}
+
+                      <p className={`text-[9px] mt-0.5 ${isMine ? "text-accent-foreground/50" : "text-foreground/40"}`}>
+                        {formatTime(msg.created_at)}
+                      </p>
+                    </div>
+
+                    {/* Action buttons - after bubble for others */}
+                    {!isMine && (
+                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => { setReplyTo(msg); inputRef.current?.focus(); }}
+                          className="p-1 rounded-full hover:bg-muted"
+                        >
+                          <Reply className="w-3 h-3 text-muted-foreground" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </div>
           );
         })}
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Scroll to bottom button */}
+      <AnimatePresence>
+        {showScrollBtn && (
+          <motion.button
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            onClick={() => scrollToBottom()}
+            className="absolute right-4 bottom-32 w-9 h-9 rounded-full bg-accent text-accent-foreground shadow-lg flex items-center justify-center z-10"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </motion.button>
+        )}
+      </AnimatePresence>
+
+      {/* Image fullscreen viewer */}
+      <AnimatePresence>
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedImage(null)}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+          >
+            <button onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 text-white">
+              <X className="w-6 h-6" />
+            </button>
+            <img src={selectedImage} alt="" className="max-w-full max-h-full object-contain rounded-lg" />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Reply preview */}
+      <AnimatePresence>
+        {replyTo && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            className="overflow-hidden"
+          >
+            <div className="px-4 py-2 bg-card border-t border-border flex items-center gap-2">
+              <Reply className="w-4 h-4 text-accent flex-shrink-0" />
+              <div className="flex-1 min-w-0">
+                <p className="text-[11px] font-semibold text-accent">{replyTo.author_name}</p>
+                <p className="text-[11px] text-muted-foreground truncate">{replyTo.content || "📷 Média"}</p>
+              </div>
+              <button onClick={() => setReplyTo(null)}>
+                <X className="w-4 h-4 text-muted-foreground" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Media preview */}
       {mediaPreview && (
@@ -297,45 +467,50 @@ const ChatTab = () => {
       </div>
 
       {/* Input */}
-      <div className="p-2.5 bg-card border-t border-border safe-area-bottom">
-        <div className="flex gap-2 items-center">
+      <div className="p-2 bg-card border-t border-border safe-area-bottom">
+        <div className="flex gap-1.5 items-end">
           {/* Media buttons */}
-          <div className="flex gap-1">
+          <div className="flex gap-0.5 pb-1">
             <button
               onClick={() => { setShowEmoji(!showEmoji); setShowGif(false); }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center transition-colors ${showEmoji ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors ${showEmoji ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
-              <Smile className="w-4.5 h-4.5" />
+              <Smile className="w-5 h-5" />
             </button>
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="w-9 h-9 rounded-full bg-muted flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
+              className="w-8 h-8 rounded-full flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors"
             >
-              <Image className="w-4.5 h-4.5" />
+              <Image className="w-5 h-5" />
             </button>
             <button
               onClick={() => { setShowGif(!showGif); setShowEmoji(false); }}
-              className={`w-9 h-9 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${showGif ? "bg-accent text-accent-foreground" : "bg-muted text-muted-foreground hover:text-foreground"}`}
+              className={`w-8 h-8 rounded-full flex items-center justify-center text-[10px] font-bold transition-colors ${showGif ? "bg-accent text-accent-foreground" : "text-muted-foreground hover:text-foreground"}`}
             >
               GIF
             </button>
           </div>
 
           <input
+            ref={inputRef}
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
             onFocus={() => { setShowEmoji(false); setShowGif(false); }}
             placeholder="Message..."
-            className="flex-1 min-w-0 bg-secondary rounded-full px-4 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            className="flex-1 min-w-0 bg-secondary rounded-full px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground focus:ring-1 focus:ring-accent/50 transition-shadow"
           />
 
           <button
             onClick={sendMessage}
             disabled={uploading || (!input.trim() && !mediaPreview)}
-            className="w-10 h-10 rounded-full bg-accent flex items-center justify-center text-accent-foreground flex-shrink-0 hover:opacity-90 transition-opacity disabled:opacity-40"
+            className="w-9 h-9 rounded-full bg-accent flex items-center justify-center text-accent-foreground flex-shrink-0 hover:opacity-90 transition-all disabled:opacity-30 disabled:scale-95 active:scale-90 mb-0.5"
           >
-            <Send className="w-4.5 h-4.5" />
+            {uploading ? (
+              <div className="w-4 h-4 border-2 border-accent-foreground/30 border-t-accent-foreground rounded-full animate-spin" />
+            ) : (
+              <Send className="w-4 h-4" />
+            )}
           </button>
         </div>
 
