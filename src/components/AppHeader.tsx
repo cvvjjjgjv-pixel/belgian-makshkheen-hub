@@ -23,7 +23,11 @@ const weatherLabels: Record<string, string> = {
   "95": "Orage", "96": "Orage grêle", "99": "Orage grêle",
 };
 
-const AppHeader = () => {
+interface AppHeaderProps {
+  onProfileClick?: () => void;
+}
+
+const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
   const { user } = useAuth();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
