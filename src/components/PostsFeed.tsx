@@ -225,7 +225,7 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                     <span>{post.comments_count}</span>
                     {expandedComments.has(post.id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
-                  <button className="text-secondary-foreground">
+                  <button onClick={() => sharePost(post)} className="text-secondary-foreground hover:text-accent transition-colors">
                     <Send className="w-5 h-5" />
                   </button>
                 </div>
