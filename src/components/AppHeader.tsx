@@ -115,7 +115,7 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
                 </span>
               )}
             </button>
-            <button className="text-foreground">
+            <button className="text-foreground" onClick={onProfileClick}>
               <User className="w-6 h-6" />
             </button>
           </div>
