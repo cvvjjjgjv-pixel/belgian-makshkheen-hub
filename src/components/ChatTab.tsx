@@ -202,7 +202,7 @@ const ChatTab = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5 overscroll-contain">
         {messages.map((msg, i) => {
           const isMine = msg.user_id === user.id;
           const showAuthor = isNewAuthor(i);
