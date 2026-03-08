@@ -392,6 +392,45 @@ export type Database = {
           },
         ]
       }
+      tv_channels: {
+        Row: {
+          created_at: string
+          icon: string
+          id: string
+          is_live: boolean
+          name: string
+          schedule_time: string | null
+          schedule_title: string | null
+          sort_order: number
+          updated_at: string
+          youtube_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          icon?: string
+          id?: string
+          is_live?: boolean
+          name: string
+          schedule_time?: string | null
+          schedule_title?: string | null
+          sort_order?: number
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          icon?: string
+          id?: string
+          is_live?: boolean
+          name?: string
+          schedule_time?: string | null
+          schedule_title?: string | null
+          sort_order?: number
+          updated_at?: string
+          youtube_url?: string | null
+        }
+        Relationships: []
+      }
       user_badges: {
         Row: {
           awarded_at: string
