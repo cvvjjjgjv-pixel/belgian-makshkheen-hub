@@ -54,6 +54,7 @@ const Index = () => {
             {activeTab === "accueil" && (
               <>
                 <Stories />
+                <WeatherWidget />
                 <LiveMatchCard />
                 <MagicPrediction />
                 <CreatePostForm onPostCreated={() => setRefreshKey((k) => k + 1)} />
