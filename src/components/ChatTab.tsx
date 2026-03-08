@@ -194,7 +194,7 @@ const ChatTab = () => {
   const isNewAuthor = (i: number) => i === 0 || messages[i].user_id !== messages[i - 1].user_id;
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 160px)" }}>
+    <div className="flex flex-col h-[calc(100dvh-140px)]">
       {/* Chat header */}
       <div className="px-4 py-3 border-b border-border">
         <h2 className="text-sm font-bold text-foreground">Chat Général 🔴🟡</h2>
@@ -202,7 +202,7 @@ const ChatTab = () => {
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-1">
+      <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-0.5 overscroll-contain">
         {messages.map((msg, i) => {
           const isMine = msg.user_id === user.id;
           const showAuthor = isNewAuthor(i);
@@ -220,14 +220,14 @@ const ChatTab = () => {
                 <div className="w-7 flex-shrink-0" />
               ) : null}
 
-              <div className={`max-w-[75%] ${isMine ? "items-end" : "items-start"} flex flex-col`}>
+              <div className={`max-w-[80%] min-w-0 ${isMine ? "items-end" : "items-start"} flex flex-col`}>
                 {showAuthor && !isMine && (
                   <span className="text-[10px] font-semibold text-muted-foreground mb-0.5 ml-1">{msg.author_name}</span>
                 )}
 
                 <div className="group relative">
                   <div
-                    className={`px-3.5 py-2 rounded-2xl ${
+                    className={`px-3 py-2 rounded-2xl break-words ${
                       isMine
                         ? "bg-accent text-accent-foreground rounded-br-sm"
                         : "bg-secondary text-foreground rounded-bl-sm"
@@ -237,9 +237,9 @@ const ChatTab = () => {
                     {msg.media_url && (
                       <div className="mb-1.5">
                         {msg.media_type === "video" ? (
-                          <video src={msg.media_url} controls className="rounded-xl max-w-full max-h-48" />
+                          <video src={msg.media_url} controls className="rounded-xl w-full max-h-52" />
                         ) : (
-                          <img src={msg.media_url} alt="" className="rounded-xl max-w-full max-h-48 object-cover cursor-pointer" loading="lazy" />
+                          <img src={msg.media_url} alt="" className="rounded-xl w-full max-h-52 object-cover cursor-pointer" loading="lazy" />
                         )}
                       </div>
                     )}
@@ -297,7 +297,7 @@ const ChatTab = () => {
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-card border-t border-border">
+      <div className="p-2.5 bg-card border-t border-border safe-area-bottom">
         <div className="flex gap-2 items-center">
           {/* Media buttons */}
           <div className="flex gap-1">
@@ -327,7 +327,7 @@ const ChatTab = () => {
             onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && sendMessage()}
             onFocus={() => { setShowEmoji(false); setShowGif(false); }}
             placeholder="Message..."
-            className="flex-1 bg-secondary rounded-full px-4 py-2.5 text-sm text-foreground outline-none placeholder:text-muted-foreground"
+            className="flex-1 min-w-0 bg-secondary rounded-full px-4 py-2 text-sm text-foreground outline-none placeholder:text-muted-foreground"
           />
 
           <button
