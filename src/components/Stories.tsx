@@ -374,11 +374,50 @@ const Stories = () => {
             </button>
           </div>
           <img src={viewingStory.image_url} alt="Story" className="w-full h-full object-contain" onClick={(e) => e.stopPropagation()} />
+
+          {/* Reaction animation */}
+          {showReactionAnim && (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none z-20">
+              <span className="text-7xl animate-bounce">{showReactionAnim}</span>
+            </div>
+          )}
+
+          {/* Caption */}
           {viewingStory.caption && (
-            <div className="absolute bottom-8 left-4 right-4 text-center">
+            <div className="absolute bottom-24 left-4 right-4 text-center">
               <p className="text-foreground text-sm bg-black/60 rounded-xl px-4 py-2 inline-block">
                 {viewingStory.caption}
               </p>
+            </div>
+          )}
+
+          {/* Reaction counts (for story owner) */}
+          {viewingStory.user_id === user?.id && reactions.length > 0 && (
+            <div className="absolute bottom-24 left-4 right-4 flex justify-center gap-2" onClick={(e) => e.stopPropagation()}>
+              {Object.entries(reactionCounts).map(([emoji, count]) => (
+                <span key={emoji} className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                  {emoji} <span className="text-white font-bold">{count}</span>
+                </span>
+              ))}
+            </div>
+          )}
+
+          {/* Emoji reaction bar */}
+          {user && viewingStory.user_id !== user.id && (
+            <div className="absolute bottom-6 left-4 right-4 flex justify-center gap-3 z-10" onClick={(e) => e.stopPropagation()}>
+              {REACTION_EMOJIS.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => sendReaction(emoji)}
+                  className={`text-2xl p-2 rounded-full transition-all ${
+                    myReaction === emoji
+                      ? "bg-white/30 scale-125 ring-2 ring-accent"
+                      : "bg-white/10 hover:bg-white/20 hover:scale-110"
+                  }`}
+                >
+                  {emoji}
+                </button>
+              ))}
             </div>
           )}
         </div>
