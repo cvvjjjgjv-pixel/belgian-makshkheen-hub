@@ -129,6 +129,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "clear_all_chat") {
+      await supabaseAdmin.from("chat_messages").delete().neq("id", "00000000-0000-0000-0000-000000000000");
+      return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     // ========== FORUM ==========
     if (action === "get_forum_topics") {
       const { data: topics } = await supabaseAdmin.from("forum_topics").select("id, title, content, replies_count, is_pinned, created_at, user_id").order("created_at", { ascending: false }).limit(50);
