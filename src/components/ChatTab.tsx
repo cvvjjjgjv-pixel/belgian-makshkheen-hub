@@ -297,7 +297,7 @@ const ChatTab = () => {
       </div>
 
       {/* Input */}
-      <div className="p-3 bg-card border-t border-border">
+      <div className="p-2.5 bg-card border-t border-border safe-area-bottom">
         <div className="flex gap-2 items-center">
           {/* Media buttons */}
           <div className="flex gap-1">
