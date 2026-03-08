@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin } from "lucide-react";
+import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import NotificationsPanel from "./NotificationsPanel";
 
 const weatherIcons: Record<string, any> = {
@@ -29,6 +31,8 @@ interface AppHeaderProps {
 
 const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const [weather, setWeather] = useState<{ temp: number; code: string; city: string } | null>(null);
@@ -106,6 +110,11 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
                 <span className="text-xs font-bold text-foreground">{weather.temp}°</span>
                 <span className="text-[9px] text-muted-foreground hidden sm:inline">{weather.city}</span>
               </div>
+            )}
+            {isAdmin && (
+              <button onClick={() => navigate("/admin")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Dashboard Admin">
+                <Shield className="w-5 h-5" />
+              </button>
             )}
             <button onClick={() => setShowNotifs(true)} className="relative text-foreground">
               <Bell className="w-5 h-5" />
