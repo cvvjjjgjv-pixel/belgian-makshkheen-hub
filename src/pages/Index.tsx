@@ -9,6 +9,7 @@ import CreatePostForm from "@/components/CreatePostForm";
 import PostsFeed from "@/components/PostsFeed";
 import MagicPrediction from "@/components/MagicPrediction";
 import WeatherWidget from "@/components/WeatherWidget";
+import RoshaneTechAd from "@/components/RoshaneTechAd";
 import TVTab from "@/components/TVTab";
 import ChatTab from "@/components/ChatTab";
 import ProfileTab from "@/components/ProfileTab";
@@ -58,6 +59,7 @@ const Index = () => {
                 <WeatherWidget />
                 <LiveMatchCard />
                 <MagicPrediction />
+                <RoshaneTechAd />
                 <CreatePostForm onPostCreated={() => setRefreshKey((k) => k + 1)} />
                 <PostsFeed refreshKey={refreshKey} />
               </>
