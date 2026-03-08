@@ -1,5 +1,6 @@
 import { useEffect, useState, useCallback } from "react";
 import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useUserRole } from "@/hooks/useUserRole";
@@ -117,6 +118,30 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
+  const sharePost = async (post: Post) => {
+    const profile = (post as any).profile;
+    const displayName = profile?.display_name || "Utilisateur";
+    const shareData = {
+      title: `Post de ${displayName}`,
+      text: `${post.content} ${post.hashtags || ""}`.trim(),
+      url: window.location.origin,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast.success("Lien copié dans le presse-papier !");
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast.success("Lien copié dans le presse-papier !");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 px-4 mt-4">
@@ -200,7 +225,7 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
                     <span>{post.comments_count}</span>
                     {expandedComments.has(post.id) ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
                   </button>
-                  <button className="text-secondary-foreground">
+                  <button onClick={() => sharePost(post)} className="text-secondary-foreground hover:text-accent transition-colors">
                     <Send className="w-5 h-5" />
                   </button>
                 </div>
