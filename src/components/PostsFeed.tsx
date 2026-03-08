@@ -118,6 +118,30 @@ const PostsFeed = ({ refreshKey }: PostsFeedProps) => {
     setPosts((prev) => prev.filter((p) => p.id !== postId));
   };
 
+  const sharePost = async (post: Post) => {
+    const profile = (post as any).profile;
+    const displayName = profile?.display_name || "Utilisateur";
+    const shareData = {
+      title: `Post de ${displayName}`,
+      text: `${post.content} ${post.hashtags || ""}`.trim(),
+      url: window.location.origin,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast.success("Lien copié dans le presse-papier !");
+      }
+    } catch (err: any) {
+      if (err.name !== "AbortError") {
+        await navigator.clipboard.writeText(`${shareData.text}\n${shareData.url}`);
+        toast.success("Lien copié dans le presse-papier !");
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="space-y-4 px-4 mt-4">
