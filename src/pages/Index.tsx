@@ -10,8 +10,9 @@ import TVTab from "@/components/TVTab";
 import ChatTab from "@/components/ChatTab";
 import ProfileTab from "@/components/ProfileTab";
 import NewsTab from "@/components/NewsTab";
+import ForumTab from "@/components/ForumTab";
 
-type Tab = "accueil" | "tv" | "news" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "news" | "forum" | "chat" | "profil";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("accueil");
@@ -40,6 +41,7 @@ const Index = () => {
             )}
             {activeTab === "tv" && <TVTab />}
             {activeTab === "news" && <NewsTab />}
+            {activeTab === "forum" && <ForumTab />}
             {activeTab === "chat" && <ChatTab />}
             {activeTab === "profil" && <ProfileTab />}
           </motion.div>

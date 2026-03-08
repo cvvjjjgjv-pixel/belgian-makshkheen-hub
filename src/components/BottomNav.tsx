@@ -1,7 +1,7 @@
 import { Home, Tv, MessageSquare, Users, User, Newspaper } from "lucide-react";
 import { motion } from "framer-motion";
 
-type Tab = "accueil" | "tv" | "news" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "news" | "forum" | "chat" | "profil";
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -12,6 +12,7 @@ const tabs: { id: Tab; icon: typeof Home; label: string }[] = [
   { id: "accueil", icon: Home, label: "Accueil" },
   { id: "tv", icon: Tv, label: "TV" },
   { id: "news", icon: Newspaper, label: "Actus" },
+  { id: "forum", icon: Users, label: "Forum" },
   { id: "chat", icon: MessageSquare, label: "Chat" },
   { id: "profil", icon: User, label: "Profil" },
 ];
