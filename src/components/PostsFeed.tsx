@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Heart, MessageCircle, Send, Trash2, ChevronDown, ChevronUp, UserPlus, UserCheck } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
