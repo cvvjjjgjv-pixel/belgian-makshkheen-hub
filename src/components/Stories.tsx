@@ -45,6 +45,9 @@ const Stories = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [progress, setProgress] = useState(0);
+  const [reactions, setReactions] = useState<Reaction[]>([]);
+  const [myReaction, setMyReaction] = useState<string | null>(null);
+  const [showReactionAnim, setShowReactionAnim] = useState<string | null>(null);
 
   const fetchStories = async () => {
     const { data } = await supabase
