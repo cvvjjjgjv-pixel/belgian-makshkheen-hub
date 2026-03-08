@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
-import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin } from "lucide-react";
+import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useUserRole } from "@/hooks/useUserRole";
 import NotificationsPanel from "./NotificationsPanel";
 
 const weatherIcons: Record<string, any> = {
