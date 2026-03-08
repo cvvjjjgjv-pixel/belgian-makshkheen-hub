@@ -63,6 +63,7 @@ const Index = () => {
               </>
             )}
             {activeTab === "tv" && <TVTab />}
+            {activeTab === "live" && <LiveStreamTab />}
             {activeTab === "news" && <NewsTab />}
             {activeTab === "forum" && <ForumTab />}
             {activeTab === "chat" && <ChatTab />}
