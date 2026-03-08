@@ -59,6 +59,7 @@ const Index = () => {
                 <WeatherWidget />
                 <LiveMatchCard />
                 <MagicPrediction />
+                <RoshaneTechAd />
                 <CreatePostForm onPostCreated={() => setRefreshKey((k) => k + 1)} />
                 <PostsFeed refreshKey={refreshKey} />
               </>
