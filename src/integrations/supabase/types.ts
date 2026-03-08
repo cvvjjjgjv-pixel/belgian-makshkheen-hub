@@ -212,6 +212,68 @@ export type Database = {
         }
         Relationships: []
       }
+      live_chat_messages: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          live_id: string
+          user_id: string
+        }
+        Insert: {
+          content?: string
+          created_at?: string
+          id?: string
+          live_id: string
+          user_id: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          live_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "live_chat_messages_live_id_fkey"
+            columns: ["live_id"]
+            isOneToOne: false
+            referencedRelation: "live_streams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      live_streams: {
+        Row: {
+          created_at: string
+          ended_at: string | null
+          id: string
+          is_active: boolean
+          title: string
+          user_id: string
+          viewers_count: number
+        }
+        Insert: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          title?: string
+          user_id: string
+          viewers_count?: number
+        }
+        Update: {
+          created_at?: string
+          ended_at?: string | null
+          id?: string
+          is_active?: boolean
+          title?: string
+          user_id?: string
+          viewers_count?: number
+        }
+        Relationships: []
+      }
       notifications: {
         Row: {
           body: string
