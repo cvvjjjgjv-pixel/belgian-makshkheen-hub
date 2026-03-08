@@ -22,6 +22,15 @@ interface Reaction {
   emoji: string;
 }
 
+interface StoryView {
+  id: string;
+  story_id: string;
+  user_id: string;
+  viewed_at: string;
+  viewer_name?: string;
+  viewer_avatar?: string;
+}
+
 const REACTION_EMOJIS = ["❤️", "🔥", "😍", "👏", "😂", "😢"];
 
 const timeRemaining = (expiresAt: string) => {
