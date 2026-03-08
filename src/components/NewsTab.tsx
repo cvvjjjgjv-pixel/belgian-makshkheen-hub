@@ -36,11 +36,11 @@ const NewsTab = () => {
     const cat = CATEGORIES.find(c => c.id === (categoryId || activeCategory)) || CATEGORIES[0];
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("gnews-proxy", {
+      const { data, error: fnError } = await supabase.functions.invoke("newsdata-proxy", {
         body: {
           q: cat.query,
-          lang: "fr",
-          max: 10,
+          language: "fr",
+          size: 10,
         },
       });
 
