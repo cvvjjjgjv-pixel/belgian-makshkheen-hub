@@ -168,6 +168,7 @@ const ProfileTab = () => {
     { icon: MessageSquare, label: "Mes commentaires", count: String(commentCount), view: "comments" as SubView, action: undefined },
     { icon: Star, label: "Badges", count: String(badgeCount), view: "badges" as SubView, action: undefined },
     { icon: Settings, label: "Paramètres", count: undefined, view: "settings" as SubView, action: undefined },
+    { icon: Smartphone, label: "Installer l'app", count: undefined, view: null as SubView, action: () => navigate("/install") },
     ...(isAdmin ? [{ icon: Shield, label: "Panel Admin", count: undefined, view: null as SubView, action: () => navigate("/admin") }] : []),
   ];
 
