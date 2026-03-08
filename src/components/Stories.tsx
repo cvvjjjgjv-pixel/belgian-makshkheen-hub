@@ -15,6 +15,15 @@ interface Story {
   profile?: { display_name: string; avatar_url: string };
 }
 
+interface Reaction {
+  id: string;
+  story_id: string;
+  user_id: string;
+  emoji: string;
+}
+
+const REACTION_EMOJIS = ["❤️", "🔥", "😍", "👏", "😂", "😢"];
+
 const timeRemaining = (expiresAt: string) => {
   const diff = new Date(expiresAt).getTime() - Date.now();
   if (diff <= 0) return "Expirée";
