@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Plus, Camera, X, Send, Image } from "lucide-react";
+import { Plus, Camera, X, Send, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
@@ -15,10 +15,20 @@ interface Story {
   profile?: { display_name: string; avatar_url: string };
 }
 
+const timeRemaining = (expiresAt: string) => {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Expirée";
+  const h = Math.floor(diff / 3600000);
+  const m = Math.floor((diff % 3600000) / 60000);
+  return h > 0 ? `${h}h${m}m` : `${m}m`;
+};
+
 const Stories = () => {
   const { user } = useAuth();
   const [stories, setStories] = useState<Story[]>([]);
+  const [allMyStories, setAllMyStories] = useState<Story[]>([]);
   const [showCreate, setShowCreate] = useState(false);
+  const [showManage, setShowManage] = useState(false);
   const [viewingStory, setViewingStory] = useState<Story | null>(null);
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState("");
@@ -34,14 +44,18 @@ const Stories = () => {
       .order("created_at", { ascending: false });
 
     if (data) {
-      // Group by user - show latest story per user
       const userMap = new Map<string, Story>();
+      const myStories: Story[] = [];
       (data as any[]).forEach((s) => {
         if (!userMap.has(s.user_id)) {
           userMap.set(s.user_id, { ...s, profile: s.profile });
         }
+        if (s.user_id === user?.id) {
+          myStories.push({ ...s, profile: s.profile });
+        }
       });
       setStories(Array.from(userMap.values()));
+      setAllMyStories(myStories);
     }
   };
 
@@ -54,9 +68,8 @@ const Stories = () => {
       })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
-  }, []);
+  }, [user]);
 
-  // Story viewer auto-progress
   useEffect(() => {
     if (!viewingStory) { setProgress(0); return; }
     const interval = setInterval(() => {
@@ -86,16 +99,12 @@ const Stories = () => {
     try {
       const ext = selectedFile.name.split(".").pop();
       const path = `${user.id}/${Date.now()}.${ext}`;
-      console.log("Uploading story to path:", path);
-      const { error: uploadError, data: uploadData } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from("stories")
         .upload(path, selectedFile, { upsert: true });
-      console.log("Upload result:", { uploadError, uploadData });
       if (uploadError) throw uploadError;
 
-      const { data: { publicUrl } } = supabase.storage
-        .from("stories")
-        .getPublicUrl(path);
+      const { data: { publicUrl } } = supabase.storage.from("stories").getPublicUrl(path);
 
       const { error } = await supabase.from("stories").insert({
         user_id: user.id,
@@ -104,7 +113,7 @@ const Stories = () => {
       });
       if (error) throw error;
 
-      toast.success("Story publiée!");
+      toast.success("Story publiée ! Elle expirera dans 24h");
       setShowCreate(false);
       setCaption("");
       setSelectedFile(null);
@@ -116,6 +125,18 @@ const Stories = () => {
     }
   };
 
+  const deleteStory = async (storyId: string) => {
+    const { error } = await supabase.from("stories").delete().eq("id", storyId);
+    if (error) {
+      toast.error("Erreur lors de la suppression");
+    } else {
+      toast.success("Story supprimée");
+      setAllMyStories((prev) => prev.filter((s) => s.id !== storyId));
+      if (viewingStory?.id === storyId) setViewingStory(null);
+      fetchStories();
+    }
+  };
+
   const hasMyStory = stories.some((s) => s.user_id === user?.id);
 
   const getInitial = (story: Story) =>
@@ -124,10 +145,9 @@ const Stories = () => {
   return (
     <>
       <div className="flex gap-3 overflow-x-auto scrollbar-hide px-4 py-4">
-        {/* Add story button */}
         <button
           className="flex flex-col items-center gap-1 flex-shrink-0"
-          onClick={() => fileInputRef.current?.click()}
+          onClick={() => hasMyStory ? setShowManage(true) : fileInputRef.current?.click()}
         >
           <div className="w-[72px] h-[72px] rounded-full p-[3px] bg-muted relative">
             <div className="w-full h-full rounded-full bg-secondary flex items-center justify-center border-2 border-background">
@@ -144,11 +164,10 @@ const Stories = () => {
             </div>
           </div>
           <span className="text-[11px] text-secondary-foreground max-w-[70px] truncate">
-            Votre story
+            {hasMyStory ? "Ma story" : "Votre story"}
           </span>
         </button>
 
-        {/* Other users' stories */}
         {stories
           .filter((s) => s.user_id !== user?.id)
           .map((story) => (
@@ -175,29 +194,9 @@ const Stories = () => {
               </span>
             </button>
           ))}
-
-        {/* My story viewer */}
-        {hasMyStory && (
-          <button
-            className="flex flex-col items-center gap-1 flex-shrink-0"
-            onClick={() => {
-              const myStory = stories.find((s) => s.user_id === user?.id);
-              if (myStory) { setViewingStory(myStory); setProgress(0); }
-            }}
-          >
-            {/* This is handled by the "Add story" button above */}
-          </button>
-        )}
       </div>
 
-      {/* Hidden file input */}
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept="image/*,video/*"
-        className="hidden"
-        onChange={handleFileSelect}
-      />
+      <input ref={fileInputRef} type="file" accept="image/*,video/*" className="hidden" onChange={handleFileSelect} />
 
       {/* Create Story Dialog */}
       <Dialog open={showCreate} onOpenChange={(v) => { if (!v) { setShowCreate(false); setPreviewUrl(null); setSelectedFile(null); setCaption(""); } }}>
@@ -217,18 +216,55 @@ const Stories = () => {
               placeholder="Ajouter une légende..."
               className="w-full px-4 py-3 rounded-xl bg-secondary border border-border text-foreground text-sm focus:outline-none focus:ring-2 focus:ring-accent"
             />
+            <p className="text-xs text-muted-foreground text-center">⏱ La story expirera automatiquement après 24h</p>
             <button
               onClick={publishStory}
               disabled={uploading || !selectedFile}
               className="w-full py-3 rounded-xl bg-accent text-accent-foreground font-bold text-sm disabled:opacity-50 flex items-center justify-center gap-2"
             >
-              {uploading ? (
-                <span className="animate-pulse">Publication...</span>
-              ) : (
-                <>
-                  <Send className="w-4 h-4" /> Publier la story
-                </>
-              )}
+              {uploading ? <span className="animate-pulse">Publication...</span> : <><Send className="w-4 h-4" /> Publier la story</>}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Manage My Stories Dialog */}
+      <Dialog open={showManage} onOpenChange={setShowManage}>
+        <DialogContent className="sm:max-w-md bg-card border-border">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Mes Stories</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            {allMyStories.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-4">Aucune story active</p>
+            ) : (
+              allMyStories.map((s) => (
+                <div key={s.id} className="flex items-center gap-3 p-3 rounded-xl bg-secondary border border-border">
+                  <img src={s.image_url} alt="" className="w-14 h-14 rounded-lg object-cover" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-foreground truncate">{s.caption || "Sans légende"}</p>
+                    <p className="text-[10px] text-muted-foreground">⏱ Expire dans {timeRemaining(s.expires_at)}</p>
+                  </div>
+                  <button
+                    onClick={() => { setViewingStory(s); setProgress(0); setShowManage(false); }}
+                    className="text-xs text-accent font-medium px-2 py-1"
+                  >
+                    Voir
+                  </button>
+                  <button
+                    onClick={() => deleteStory(s.id)}
+                    className="p-2 rounded-full hover:bg-destructive/10 text-destructive"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
+              ))
+            )}
+            <button
+              onClick={() => { setShowManage(false); fileInputRef.current?.click(); }}
+              className="w-full py-3 rounded-xl bg-accent text-accent-foreground font-bold text-sm flex items-center justify-center gap-2"
+            >
+              <Plus className="w-4 h-4" /> Ajouter une story
             </button>
           </div>
         </DialogContent>
@@ -236,40 +272,33 @@ const Stories = () => {
 
       {/* Story Viewer */}
       {viewingStory && (
-        <div
-          className="fixed inset-0 z-50 bg-black flex flex-col"
-          onClick={() => setViewingStory(null)}
-        >
-          {/* Progress bar */}
+        <div className="fixed inset-0 z-50 bg-black flex flex-col" onClick={() => setViewingStory(null)}>
           <div className="absolute top-0 left-0 right-0 h-1 bg-muted z-10">
-            <div
-              className="h-full bg-accent transition-all duration-100"
-              style={{ width: `${progress}%` }}
-            />
+            <div className="h-full bg-accent transition-all duration-100" style={{ width: `${progress}%` }} />
           </div>
-
-          {/* Header */}
           <div className="absolute top-4 left-4 right-4 z-10 flex items-center gap-3">
             <div className="w-8 h-8 rounded-full bg-secondary flex items-center justify-center text-sm font-bold text-accent">
               {getInitial(viewingStory)}
             </div>
-            <span className="text-foreground text-sm font-medium flex-1">
-              {viewingStory.profile?.display_name || "Utilisateur"}
-            </span>
+            <div className="flex-1">
+              <span className="text-foreground text-sm font-medium">
+                {viewingStory.profile?.display_name || "Utilisateur"}
+              </span>
+              <p className="text-[10px] text-muted-foreground">⏱ {timeRemaining(viewingStory.expires_at)}</p>
+            </div>
+            {viewingStory.user_id === user?.id && (
+              <button
+                onClick={(e) => { e.stopPropagation(); deleteStory(viewingStory.id); }}
+                className="p-2 rounded-full bg-destructive/20 text-destructive"
+              >
+                <Trash2 className="w-5 h-5" />
+              </button>
+            )}
             <button onClick={() => setViewingStory(null)}>
               <X className="w-6 h-6 text-foreground" />
             </button>
           </div>
-
-          {/* Image */}
-          <img
-            src={viewingStory.image_url}
-            alt="Story"
-            className="w-full h-full object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
-
-          {/* Caption */}
+          <img src={viewingStory.image_url} alt="Story" className="w-full h-full object-contain" onClick={(e) => e.stopPropagation()} />
           {viewingStory.caption && (
             <div className="absolute bottom-8 left-4 right-4 text-center">
               <p className="text-foreground text-sm bg-black/60 rounded-xl px-4 py-2 inline-block">
