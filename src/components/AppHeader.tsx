@@ -31,6 +31,8 @@ interface AppHeaderProps {
 
 const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
   const { user } = useAuth();
+  const { isAdmin } = useUserRole();
+  const navigate = useNavigate();
   const [unreadCount, setUnreadCount] = useState(0);
   const [showNotifs, setShowNotifs] = useState(false);
   const [weather, setWeather] = useState<{ temp: number; code: string; city: string } | null>(null);
