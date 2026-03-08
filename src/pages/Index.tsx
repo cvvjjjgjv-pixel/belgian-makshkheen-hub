@@ -19,6 +19,23 @@ const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("accueil");
   const [refreshKey, setRefreshKey] = useState(0);
 
+  // Load saved theme on mount
+  useEffect(() => {
+    const loadTheme = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+      const { data } = await supabase
+        .from("user_settings")
+        .select("dark_mode")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (data && !data.dark_mode) {
+        document.documentElement.classList.add("light-mode");
+      }
+    };
+    loadTheme();
+  }, []);
+
   return (
     <div className="min-h-screen bg-background max-w-lg mx-auto relative">
       <AppHeader />
