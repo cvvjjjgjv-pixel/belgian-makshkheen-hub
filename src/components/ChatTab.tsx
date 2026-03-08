@@ -237,9 +237,9 @@ const ChatTab = () => {
                     {msg.media_url && (
                       <div className="mb-1.5">
                         {msg.media_type === "video" ? (
-                          <video src={msg.media_url} controls className="rounded-xl max-w-full max-h-48" />
+                          <video src={msg.media_url} controls className="rounded-xl w-full max-h-52" />
                         ) : (
-                          <img src={msg.media_url} alt="" className="rounded-xl max-w-full max-h-48 object-cover cursor-pointer" loading="lazy" />
+                          <img src={msg.media_url} alt="" className="rounded-xl w-full max-h-52 object-cover cursor-pointer" loading="lazy" />
                         )}
                       </div>
                     )}
