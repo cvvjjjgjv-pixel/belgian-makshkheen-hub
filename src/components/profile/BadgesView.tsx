@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { ArrowLeft, Star, Pencil, MessageSquare, Heart, Shield, Users, Lock } from "lucide-react";
+import { ArrowLeft, Star, Pencil, MessageSquare, Heart, Shield, Users, Lock, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 type Badge = {
   id: string;
@@ -25,37 +26,69 @@ const BadgesView = ({ onBack }: { onBack: () => void }) => {
   const { user } = useAuth();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
+  const [checking, setChecking] = useState(false);
+
+  const fetchBadges = async () => {
+    if (!user) return;
+
+    const { data: allBadges } = await supabase
+      .from("badges")
+      .select("*")
+      .order("created_at", { ascending: true });
+
+    const { data: userBadges } = await supabase
+      .from("user_badges")
+      .select("badge_id, awarded_at")
+      .eq("user_id", user.id);
+
+    const earnedMap = new Map(userBadges?.map((ub: any) => [ub.badge_id, ub.awarded_at]) || []);
+
+    setBadges(
+      (allBadges || []).map((b: any) => ({
+        id: b.id,
+        name: b.name,
+        description: b.description,
+        icon: b.icon,
+        earned: earnedMap.has(b.id),
+        awarded_at: earnedMap.get(b.id),
+      }))
+    );
+    setLoading(false);
+  };
+
+  const checkAndAwardBadges = async () => {
+    if (!user) return;
+    setChecking(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("check-badges");
+      if (error) throw error;
+      if (data?.awarded?.length > 0) {
+        toast.success(`🎉 Nouveau(x) badge(s) : ${data.awarded.join(", ")}`);
+      } else {
+        toast.info("Pas de nouveau badge pour le moment");
+      }
+      await fetchBadges();
+    } catch (err) {
+      console.error("Check badges error:", err);
+      toast.error("Erreur lors de la vérification des badges");
+    } finally {
+      setChecking(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchBadges = async () => {
-      if (!user) return;
-
-      const { data: allBadges } = await supabase
-        .from("badges")
-        .select("*")
-        .order("created_at", { ascending: true });
-
-      const { data: userBadges } = await supabase
-        .from("user_badges")
-        .select("badge_id, awarded_at")
-        .eq("user_id", user.id);
-
-      const earnedMap = new Map(userBadges?.map((ub: any) => [ub.badge_id, ub.awarded_at]) || []);
-
-      setBadges(
-        (allBadges || []).map((b: any) => ({
-          id: b.id,
-          name: b.name,
-          description: b.description,
-          icon: b.icon,
-          earned: earnedMap.has(b.id),
-          awarded_at: earnedMap.get(b.id),
-        }))
-      );
-      setLoading(false);
+    const init = async () => {
+      await fetchBadges();
+      // Auto-check on first load
+      if (user) {
+        const { data } = await supabase.functions.invoke("check-badges");
+        if (data?.awarded?.length > 0) {
+          toast.success(`🎉 Nouveau(x) badge(s) : ${data.awarded.join(", ")}`);
+          await fetchBadges();
+        }
+      }
     };
-
-    fetchBadges();
+    init();
   }, [user]);
 
   const earnedCount = badges.filter((b) => b.earned).length;
@@ -67,6 +100,13 @@ const BadgesView = ({ onBack }: { onBack: () => void }) => {
         <Star className="w-5 h-5 text-accent" />
         <h2 className="text-lg font-bold text-foreground">Badges</h2>
         <span className="ml-auto text-xs font-bold text-accent">{earnedCount}/{badges.length}</span>
+        <button
+          onClick={checkAndAwardBadges}
+          disabled={checking}
+          className="p-1.5 rounded-full bg-card border border-border text-muted-foreground hover:text-accent transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${checking ? "animate-spin" : ""}`} />
+        </button>
       </div>
 
       {loading ? (
@@ -95,6 +135,11 @@ const BadgesView = ({ onBack }: { onBack: () => void }) => {
                 </div>
                 <p className="text-xs font-bold text-foreground">{badge.name}</p>
                 <p className="text-[10px] text-muted-foreground mt-0.5">{badge.description}</p>
+                {badge.earned && badge.awarded_at && (
+                  <p className="text-[9px] text-accent mt-1">
+                    Obtenu le {new Date(badge.awarded_at).toLocaleDateString("fr-FR")}
+                  </p>
+                )}
               </div>
             );
           })}
