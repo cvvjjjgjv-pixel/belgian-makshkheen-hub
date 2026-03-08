@@ -148,7 +148,7 @@ const Stories = () => {
     const interval = setInterval(() => {
       setProgress((p) => {
         if (p >= 100) { setViewingStory(null); return 0; }
-        return p + 2;
+        return p + 1;
       });
     }, 100);
 
