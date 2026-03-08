@@ -39,7 +39,7 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background max-w-lg mx-auto relative">
-      <AppHeader />
+      <AppHeader onProfileClick={() => setActiveTab("profil")} />
 
       <main className="pb-20">
         <AnimatePresence mode="wait">
