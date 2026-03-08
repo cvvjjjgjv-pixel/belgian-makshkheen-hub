@@ -389,6 +389,15 @@ const Admin = () => {
           {/* ========== CHAT ========== */}
           {tab === "chat" && (
             <div className="space-y-1.5">
+              {chatMessages.length > 0 && (
+                <button
+                  onClick={clearAllChat}
+                  className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl bg-destructive/10 text-destructive text-sm font-bold hover:bg-destructive/20 transition-colors mb-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Vider tout le chat ({chatMessages.length} messages)
+                </button>
+              )}
               {chatMessages.length === 0 && <p className="text-center text-muted-foreground text-sm py-8">Aucun message</p>}
               {chatMessages.map((m) => (
                 <div key={m.id} className="flex items-center gap-2 p-2.5 rounded-xl bg-card border border-border">
