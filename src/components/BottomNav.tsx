@@ -1,7 +1,7 @@
-import { Home, Tv, MessageSquare, Users, User, Newspaper } from "lucide-react";
+import { Home, Tv, MessageSquare, Users, User, Newspaper, Radio } from "lucide-react";
 import { motion } from "framer-motion";
 
-type Tab = "accueil" | "tv" | "news" | "forum" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "profil";
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -11,8 +11,8 @@ interface BottomNavProps {
 const tabs: { id: Tab; icon: typeof Home; label: string }[] = [
   { id: "accueil", icon: Home, label: "Accueil" },
   { id: "tv", icon: Tv, label: "TV" },
+  { id: "live", icon: Radio, label: "Live" },
   { id: "news", icon: Newspaper, label: "Actus" },
-  { id: "forum", icon: Users, label: "Forum" },
   { id: "chat", icon: MessageSquare, label: "Chat" },
   { id: "profil", icon: User, label: "Profil" },
 ];
@@ -38,8 +38,8 @@ const BottomNav = ({ activeTab, onTabChange }: BottomNavProps) => {
                   className="absolute top-0 left-1/2 -translate-x-1/2 w-10 h-[3px] bg-accent rounded-b"
                 />
               )}
-              <Icon className="w-5 h-5" />
-              <span className="text-[10px] mt-1 font-medium">{tab.label}</span>
+              <Icon className={`w-5 h-5 ${tab.id === "live" && !isActive ? "text-destructive" : ""}`} />
+              <span className={`text-[10px] mt-1 font-medium ${tab.id === "live" && !isActive ? "text-destructive" : ""}`}>{tab.label}</span>
             </button>
           );
         })}
