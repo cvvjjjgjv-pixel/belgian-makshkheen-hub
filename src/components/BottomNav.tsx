@@ -13,6 +13,7 @@ const tabs: { id: Tab; icon: typeof Home; label: string }[] = [
   { id: "tv", icon: Tv, label: "TV" },
   { id: "live", icon: Radio, label: "Live" },
   { id: "news", icon: Newspaper, label: "Actus" },
+  { id: "forum", icon: Users, label: "Forum" },
   { id: "chat", icon: MessageSquare, label: "Chat" },
   { id: "profil", icon: User, label: "Profil" },
 ];
