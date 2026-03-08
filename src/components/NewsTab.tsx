@@ -14,21 +14,31 @@ interface Article {
   };
 }
 
+const CATEGORIES = [
+  { id: "sport", label: "⚽ Sport", query: "sport tunisie OR football tunisie OR Espérance Tunis OR Taraji" },
+  { id: "football", label: "🏟️ Football", query: "football tunisie OR ligue 1 tunisie OR Espérance Tunis OR Taraji" },
+  { id: "est", label: "🔴🟡 Espérance", query: "Taraji OR Espérance Tunis OR الترجي" },
+  { id: "all", label: "📰 Tout", query: "Tunisie actualité" },
+] as const;
+
 const NewsTab = () => {
   const [articles, setArticles] = useState<Article[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("sport");
 
-  const fetchNews = async (isRefresh = false) => {
+  const fetchNews = async (isRefresh = false, categoryId?: string) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
 
+    const cat = CATEGORIES.find(c => c.id === (categoryId || activeCategory)) || CATEGORIES[0];
+
     try {
       const { data, error: fnError } = await supabase.functions.invoke("gnews-proxy", {
         body: {
-          q: "Taraji OR Espérance Tunis OR الترجي",
+          q: cat.query,
           lang: "fr",
           max: 10,
         },
@@ -48,8 +58,8 @@ const NewsTab = () => {
   };
 
   useEffect(() => {
-    fetchNews();
-  }, []);
+    fetchNews(false, activeCategory);
+  }, [activeCategory]);
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
@@ -76,7 +86,24 @@ const NewsTab = () => {
         </button>
       </div>
 
-      {/* Loading skeleton */}
+      {/* Category filters */}
+      <div className="px-4 pb-3 flex gap-2 overflow-x-auto scrollbar-hide">
+        {CATEGORIES.map((cat) => (
+          <button
+            key={cat.id}
+            onClick={() => setActiveCategory(cat.id)}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${
+              activeCategory === cat.id
+                ? "bg-accent text-accent-foreground border-accent"
+                : "bg-card text-muted-foreground border-border hover:border-accent/40"
+            }`}
+          >
+            {cat.label}
+          </button>
+        ))}
+      </div>
+
+
       {loading && (
         <div className="space-y-3 px-4">
           {[1, 2, 3, 4].map((i) => (
