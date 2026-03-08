@@ -33,26 +33,35 @@ const ProfileTab = () => {
   const [badgeCount, setBadgeCount] = useState(0);
   const [userRank, setUserRank] = useState("-");
   const [uploading, setUploading] = useState(false);
+  const [postCount, setPostCount] = useState(0);
+  const [followerCount, setFollowerCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
 
   // Fetch counts
   useEffect(() => {
     if (!user) return;
 
     const fetchCounts = async () => {
-      const [{ count: favs }, { count: comments }, { count: badges }] = await Promise.all([
+      const [{ count: favs }, { count: comments }, { count: badges }, { count: posts }, { count: followers }, { count: following }] = await Promise.all([
         supabase.from("favorites").select("*", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("comments").select("*", { count: "exact", head: true }).eq("user_id", user.id),
         supabase.from("user_badges").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("posts").select("*", { count: "exact", head: true }).eq("user_id", user.id),
+        supabase.from("followers").select("*", { count: "exact", head: true }).eq("following_id", user.id),
+        supabase.from("followers").select("*", { count: "exact", head: true }).eq("follower_id", user.id),
       ]);
       setFavCount(favs || 0);
       setCommentCount(comments || 0);
       setBadgeCount(badges || 0);
+      setPostCount(posts || 0);
+      setFollowerCount(followers || 0);
+      setFollowingCount(following || 0);
 
       // Calculate rank
-      const { data: posts } = await supabase.from("posts").select("user_id, likes_count");
-      if (posts) {
+      const { data: allPosts } = await supabase.from("posts").select("user_id, likes_count");
+      if (allPosts) {
         const userScores = new Map<string, number>();
-        posts.forEach((p: any) => {
+        allPosts.forEach((p: any) => {
           userScores.set(p.user_id, (userScores.get(p.user_id) || 0) + 10 + (p.likes_count || 0) * 5);
         });
         const sorted = [...userScores.entries()].sort((a, b) => b[1] - a[1]);
@@ -62,7 +71,7 @@ const ProfileTab = () => {
     };
 
     fetchCounts();
-  }, [user, subView]);
+  }, [user, subView, postRefreshKey]);
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
