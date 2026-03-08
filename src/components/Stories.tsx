@@ -487,20 +487,32 @@ const Stories = () => {
 
           {/* Emoji reaction bar (for viewers) */}
           {user && viewingStory.user_id !== user.id && (
-            <div className="absolute bottom-6 left-4 right-4 flex justify-center gap-3 z-10" onClick={(e) => e.stopPropagation()}>
-              {REACTION_EMOJIS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => sendReaction(emoji)}
-                  className={`text-2xl p-2 rounded-full transition-all ${
-                    myReaction === emoji
-                      ? "bg-white/30 scale-125 ring-2 ring-accent"
-                      : "bg-white/10 hover:bg-white/20 hover:scale-110"
-                  }`}
-                >
-                  {emoji}
-                </button>
-              ))}
+            <div className="absolute bottom-0 left-0 right-0 z-20" onClick={(e) => e.stopPropagation()}>
+              {/* Show existing reaction counts */}
+              {reactions.length > 0 && (
+                <div className="flex justify-center gap-2 mb-2 px-4">
+                  {Object.entries(reactionCounts).map(([emoji, count]) => (
+                    <span key={emoji} className="bg-white/20 backdrop-blur-sm rounded-full px-3 py-1 text-sm">
+                      {emoji} <span className="text-white font-bold">{count}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+              <div className="bg-black/70 backdrop-blur-sm px-4 py-4 flex justify-center gap-3">
+                {REACTION_EMOJIS.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => sendReaction(emoji)}
+                    className={`text-2xl p-2 rounded-full transition-all ${
+                      myReaction === emoji
+                        ? "bg-white/30 scale-125 ring-2 ring-accent"
+                        : "bg-white/10 hover:bg-white/20 hover:scale-110"
+                    }`}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
