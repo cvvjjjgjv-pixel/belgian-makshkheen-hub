@@ -174,24 +174,18 @@ const Stories = () => {
 
     if (myReaction === emoji) {
       // Remove reaction
-      await supabase.from("story_reactions").delete()
+      const { error } = await supabase.from("story_reactions").delete()
         .eq("story_id", viewingStory.id)
         .eq("user_id", user.id);
+      if (error) console.error("Delete reaction error:", error);
       setMyReaction(null);
     } else {
-      // Upsert reaction
-      if (myReaction) {
-        await supabase.from("story_reactions")
-          .update({ emoji })
-          .eq("story_id", viewingStory.id)
-          .eq("user_id", user.id);
-      } else {
-        await supabase.from("story_reactions").insert({
-          story_id: viewingStory.id,
-          user_id: user.id,
-          emoji,
-        });
-      }
+      // Always upsert
+      const { error } = await supabase.from("story_reactions").upsert(
+        { story_id: viewingStory.id, user_id: user.id, emoji },
+        { onConflict: "story_id,user_id" }
+      );
+      if (error) console.error("Upsert reaction error:", error);
       setMyReaction(emoji);
     }
   };
