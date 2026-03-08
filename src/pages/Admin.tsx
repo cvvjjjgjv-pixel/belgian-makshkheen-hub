@@ -30,10 +30,11 @@ const Admin = () => {
 
   useEffect(() => {
     if (!roleLoading && !isAdmin) {
-      navigate("/");
-      toast.error("Accès refusé");
+      console.error("Accès refusé. Roles actuels:", user?.id);
+      // Temporairement enlevé pour le débogage : navigate("/");
+      toast.error("Accès refusé - Vérifie tes logs (F12)");
     }
-  }, [roleLoading, isAdmin, navigate]);
+  }, [roleLoading, isAdmin, navigate, user]);
 
   const callAdmin = useCallback(async (body: any) => {
     const { data: { session } } = await supabase.auth.getSession();
