@@ -79,6 +79,8 @@ const GameMenu = ({ onSelect }: { onSelect: (game: GameType) => void }) => {
     { id: "quiz" as GameType, title: "Quiz Sportif", desc: "Teste tes connaissances sur le foot tunisien", icon: "🧠", color: "from-accent/20 to-accent/5" },
     { id: "guess" as GameType, title: "Devine le Joueur", desc: "Trouve le joueur à partir des indices", icon: "🕵️", color: "from-primary/20 to-primary/5" },
     { id: "emoji" as GameType, title: "Emoji Joueur", desc: "Reconnais le joueur grâce aux emojis", icon: "😎", color: "from-destructive/20 to-destructive/5" },
+    { id: "chkobba-lobby" as GameType, title: "Chkobba", desc: "Jeu de cartes tunisien en ligne", icon: "🃏", color: "from-accent/30 to-accent/10" },
+    { id: "rami-lobby" as GameType, title: "Rami", desc: "Jeu de cartes multijoueur en ligne", icon: "🎴", color: "from-primary/30 to-primary/10" },
   ];
 
   return (
