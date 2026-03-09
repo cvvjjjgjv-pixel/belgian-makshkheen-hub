@@ -56,6 +56,18 @@ const GamesTab = () => {
           {currentGame === "quiz" && <QuizGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "guess" && <GuessPlayerGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "emoji" && <EmojiGame onBack={() => setCurrentGame("menu")} />}
+          {currentGame === "chkobba-lobby" && (
+            <GameLobby gameType="chkobba" onBack={() => setCurrentGame("menu")} onGameStart={(id) => { setActiveRoomId(id); setCurrentGame("chkobba-game"); }} />
+          )}
+          {currentGame === "chkobba-game" && activeRoomId && (
+            <ChkobbaGame roomId={activeRoomId} onBack={() => setCurrentGame("chkobba-lobby")} />
+          )}
+          {currentGame === "rami-lobby" && (
+            <GameLobby gameType="rami" onBack={() => setCurrentGame("menu")} onGameStart={(id) => { setActiveRoomId(id); setCurrentGame("rami-game"); }} />
+          )}
+          {currentGame === "rami-game" && activeRoomId && (
+            <RamiGame roomId={activeRoomId} onBack={() => setCurrentGame("rami-lobby")} />
+          )}
         </motion.div>
       </AnimatePresence>
     </div>
