@@ -2,8 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gamepad2, Trophy, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import GameLobby from "@/components/games/GameLobby";
+import ChkobbaGame from "@/components/games/ChkobbaGame";
+import RamiGame from "@/components/games/RamiGame";
 
-type GameType = "menu" | "quiz" | "guess" | "emoji";
+type GameType = "menu" | "quiz" | "guess" | "emoji" | "chkobba-lobby" | "chkobba-game" | "rami-lobby" | "rami-game";
 
 const QUIZ_QUESTIONS = [
   { question: "En quelle année l'EST a remporté sa première Ligue des Champions ?", options: ["1991", "1994", "2011", "2018"], answer: 1 },
