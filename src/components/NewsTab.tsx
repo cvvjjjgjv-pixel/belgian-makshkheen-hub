@@ -15,10 +15,13 @@ interface Article {
 }
 
 const CATEGORIES = [
-  { id: "sport", label: "⚽ Sport", query: "sport tunisie OR football tunisie OR Espérance Tunis OR Taraji" },
-  { id: "football", label: "🏟️ Football", query: "football tunisie OR ligue 1 tunisie OR Espérance Tunis OR Taraji" },
-  { id: "est", label: "🔴🟡 Espérance", query: "Taraji OR Espérance Tunis OR الترجي" },
-  { id: "all", label: "📰 Tout", query: "Tunisie actualité" },
+  { id: "football", label: "⚽ Football", query: "football tunisie OR ligue 1 tunisie OR championnat tunisie football" },
+  { id: "handball", label: "🤾 Handball", query: "handball tunisie OR championnat tunisie handball" },
+  { id: "volleyball", label: "🏐 Volleyball", query: "volleyball tunisie OR volley tunisie OR championnat tunisie volley" },
+  { id: "est", label: "🔴🟡 EST", query: "Espérance Sportive de Tunis OR Taraji OR الترجي OR EST tunisie" },
+  { id: "nationale", label: "🇹🇳 Équipe Nationale", query: "équipe nationale tunisie OR aigles de carthage OR sélection tunisie" },
+  { id: "championnat", label: "🏆 Championnat", query: "championnat tunisie OR ligue 1 tunisie OR ligue professionnelle tunisie" },
+  { id: "all", label: "📰 Tout", query: "sport tunisie actualité" },
 ] as const;
 
 const NewsTab = () => {
