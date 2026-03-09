@@ -70,6 +70,7 @@ const Index = () => {
             {activeTab === "news" && <NewsTab />}
             {activeTab === "forum" && <ForumTab />}
             {activeTab === "chat" && <ChatTab />}
+            {activeTab === "jeux" && <GamesTab />}
             {activeTab === "profil" && <ProfileTab />}
           </motion.div>
         </AnimatePresence>
