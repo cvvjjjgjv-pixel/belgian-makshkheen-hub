@@ -35,6 +35,7 @@ const GUESS_PLAYERS = [
 
 const GamesTab = () => {
   const [currentGame, setCurrentGame] = useState<GameType>("menu");
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   return (
     <div className="px-4 py-4 space-y-4">
