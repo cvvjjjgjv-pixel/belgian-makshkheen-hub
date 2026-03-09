@@ -1,7 +1,7 @@
-import { Home, Tv, MessageSquare, Users, User, Newspaper, Radio } from "lucide-react";
+import { Home, Tv, MessageSquare, Users, User, Newspaper, Radio, Gamepad2 } from "lucide-react";
 import { motion } from "framer-motion";
 
-type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "jeux" | "profil";
 
 interface BottomNavProps {
   activeTab: Tab;
@@ -15,6 +15,7 @@ const tabs: { id: Tab; icon: typeof Home; label: string }[] = [
   { id: "news", icon: Newspaper, label: "Actus" },
   { id: "forum", icon: Users, label: "Forum" },
   { id: "chat", icon: MessageSquare, label: "Chat" },
+  { id: "jeux", icon: Gamepad2, label: "Jeux" },
   { id: "profil", icon: User, label: "Profil" },
 ];
 

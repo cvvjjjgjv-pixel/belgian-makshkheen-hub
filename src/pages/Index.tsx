@@ -16,8 +16,9 @@ import ProfileTab from "@/components/ProfileTab";
 import NewsTab from "@/components/NewsTab";
 import ForumTab from "@/components/ForumTab";
 import LiveStreamTab from "@/components/LiveStreamTab";
+import GamesTab from "@/components/GamesTab";
 
-type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "profil";
+type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "jeux" | "profil";
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState<Tab>("accueil");
@@ -69,6 +70,7 @@ const Index = () => {
             {activeTab === "news" && <NewsTab />}
             {activeTab === "forum" && <ForumTab />}
             {activeTab === "chat" && <ChatTab />}
+            {activeTab === "jeux" && <GamesTab />}
             {activeTab === "profil" && <ProfileTab />}
           </motion.div>
         </AnimatePresence>
