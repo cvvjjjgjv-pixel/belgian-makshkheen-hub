@@ -212,6 +212,83 @@ export type Database = {
         }
         Relationships: []
       }
+      game_players: {
+        Row: {
+          captured: Json
+          hand: Json
+          id: string
+          joined_at: string
+          room_id: string
+          score: number
+          user_id: string
+        }
+        Insert: {
+          captured?: Json
+          hand?: Json
+          id?: string
+          joined_at?: string
+          room_id: string
+          score?: number
+          user_id: string
+        }
+        Update: {
+          captured?: Json
+          hand?: Json
+          id?: string
+          joined_at?: string
+          room_id?: string
+          score?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "game_players_room_id_fkey"
+            columns: ["room_id"]
+            isOneToOne: false
+            referencedRelation: "game_rooms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      game_rooms: {
+        Row: {
+          created_at: string
+          created_by: string
+          current_turn: string | null
+          game_state: Json
+          game_type: string
+          id: string
+          max_players: number
+          status: string
+          updated_at: string
+          winner_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          current_turn?: string | null
+          game_state?: Json
+          game_type: string
+          id?: string
+          max_players?: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          current_turn?: string | null
+          game_state?: Json
+          game_type?: string
+          id?: string
+          max_players?: number
+          status?: string
+          updated_at?: string
+          winner_id?: string | null
+        }
+        Relationships: []
+      }
       live_chat_messages: {
         Row: {
           content: string

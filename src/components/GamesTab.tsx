@@ -2,8 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gamepad2, Trophy, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import GameLobby from "@/components/games/GameLobby";
+import ChkobbaGame from "@/components/games/ChkobbaGame";
+import RamiGame from "@/components/games/RamiGame";
 
-type GameType = "menu" | "quiz" | "guess" | "emoji";
+type GameType = "menu" | "quiz" | "guess" | "emoji" | "chkobba-lobby" | "chkobba-game" | "rami-lobby" | "rami-game";
 
 const QUIZ_QUESTIONS = [
   { question: "En quelle année l'EST a remporté sa première Ligue des Champions ?", options: ["1991", "1994", "2011", "2018"], answer: 1 },
@@ -32,6 +35,7 @@ const GUESS_PLAYERS = [
 
 const GamesTab = () => {
   const [currentGame, setCurrentGame] = useState<GameType>("menu");
+  const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
 
   return (
     <div className="px-4 py-4 space-y-4">
@@ -52,6 +56,18 @@ const GamesTab = () => {
           {currentGame === "quiz" && <QuizGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "guess" && <GuessPlayerGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "emoji" && <EmojiGame onBack={() => setCurrentGame("menu")} />}
+          {currentGame === "chkobba-lobby" && (
+            <GameLobby gameType="chkobba" onBack={() => setCurrentGame("menu")} onGameStart={(id) => { setActiveRoomId(id); setCurrentGame("chkobba-game"); }} />
+          )}
+          {currentGame === "chkobba-game" && activeRoomId && (
+            <ChkobbaGame roomId={activeRoomId} onBack={() => setCurrentGame("chkobba-lobby")} />
+          )}
+          {currentGame === "rami-lobby" && (
+            <GameLobby gameType="rami" onBack={() => setCurrentGame("menu")} onGameStart={(id) => { setActiveRoomId(id); setCurrentGame("rami-game"); }} />
+          )}
+          {currentGame === "rami-game" && activeRoomId && (
+            <RamiGame roomId={activeRoomId} onBack={() => setCurrentGame("rami-lobby")} />
+          )}
         </motion.div>
       </AnimatePresence>
     </div>
@@ -63,6 +79,8 @@ const GameMenu = ({ onSelect }: { onSelect: (game: GameType) => void }) => {
     { id: "quiz" as GameType, title: "Quiz Sportif", desc: "Teste tes connaissances sur le foot tunisien", icon: "🧠", color: "from-accent/20 to-accent/5" },
     { id: "guess" as GameType, title: "Devine le Joueur", desc: "Trouve le joueur à partir des indices", icon: "🕵️", color: "from-primary/20 to-primary/5" },
     { id: "emoji" as GameType, title: "Emoji Joueur", desc: "Reconnais le joueur grâce aux emojis", icon: "😎", color: "from-destructive/20 to-destructive/5" },
+    { id: "chkobba-lobby" as GameType, title: "Chkobba", desc: "Jeu de cartes tunisien en ligne", icon: "🃏", color: "from-accent/30 to-accent/10" },
+    { id: "rami-lobby" as GameType, title: "Rami", desc: "Jeu de cartes multijoueur en ligne", icon: "🎴", color: "from-primary/30 to-primary/10" },
   ];
 
   return (
