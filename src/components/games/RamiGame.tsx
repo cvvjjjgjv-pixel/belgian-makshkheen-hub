@@ -76,6 +76,7 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCards, setSelectedCards] = useState<StandardCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRules, setShowRules] = useState(false);
 
   const loadGame = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
