@@ -230,12 +230,23 @@ const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">{players.length}/2 joueurs</p>
-          {players.length >= 2 && players[0]?.id === userId && (
-            <Button onClick={startGame} className="w-full">Commencer la partie</Button>
+          {players.length >= 2 && (createdBy === userId || players[0]?.id === userId) && (
+            <Button onClick={startGame} className="w-full">🎮 Commencer la partie</Button>
           )}
           {players.length < 2 && (
             <p className="text-xs text-muted-foreground animate-pulse">En attente d'un adversaire...</p>
           )}
+          
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-left space-y-2 mt-4">
+            <p className="text-sm font-bold text-foreground">📖 Comment jouer à la Chkobba :</p>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Chaque joueur reçoit 3 cartes, 4 cartes sur la table</li>
+              <li>À ton tour : joue une carte de ta main</li>
+              <li><strong>Capture</strong> : sélectionne des cartes de la table dont la somme = ta carte</li>
+              <li>Si tu vides la table → <strong>Chkobba !</strong> (1 point bonus)</li>
+              <li>Points : plus de cartes, plus de denari, 7 de denari</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
