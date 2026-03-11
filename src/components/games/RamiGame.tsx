@@ -76,6 +76,7 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCards, setSelectedCards] = useState<StandardCard[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRules, setShowRules] = useState(false);
 
   const loadGame = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
@@ -246,8 +247,23 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
         <span className={`text-sm font-bold ${isMyTurn ? "text-accent" : "text-muted-foreground"}`}>
           {isMyTurn ? (gameState.turnPhase === "must_draw" ? "🟢 Pioche !" : "🟢 Joue ou défausse") : `⏳ ${getPlayerName(gameState.currentTurn)}`}
         </span>
-        <span className="text-xs text-muted-foreground">🃏 {gameState.deck.length}</span>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setShowRules(!showRules)} className="text-lg p-1 h-auto">ℹ️</Button>
+          <span className="text-xs text-muted-foreground">🃏 {gameState.deck.length}</span>
+        </div>
       </div>
+
+      {showRules && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-accent/5 border border-accent/20 rounded-xl p-3 text-left space-y-1">
+          <p className="text-sm font-bold text-foreground">📖 Règles Rami :</p>
+          <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+            <li><strong>Pioche</strong> : prends une carte du deck ou de la défausse</li>
+            <li><strong>Combinaisons</strong> : pose 3+ cartes (même valeur = brelan, suite même couleur)</li>
+            <li><strong>Défausse</strong> : sélectionne 1 carte et défausse pour finir ton tour</li>
+            <li>Le premier à vider sa main gagne ! 🏆</li>
+          </ul>
+        </motion.div>
+      )}
 
       {/* Other players info */}
       <div className="flex justify-center gap-4">
