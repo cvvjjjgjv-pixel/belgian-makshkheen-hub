@@ -230,7 +230,7 @@ const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
             ))}
           </div>
           <p className="text-sm text-muted-foreground">{players.length}/2 joueurs</p>
-          {players.length >= 2 && (createdBy === userId || players[0]?.id === userId) && (
+          {players.length >= 2 && (
             <Button onClick={startGame} className="w-full">🎮 Commencer la partie</Button>
           )}
           {players.length < 2 && (
