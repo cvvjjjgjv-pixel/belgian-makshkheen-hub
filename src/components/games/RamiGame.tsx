@@ -72,6 +72,7 @@ const isValidMeld = (cards: StandardCard[]): boolean => {
 const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [createdBy, setCreatedBy] = useState<string | null>(null);
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCards, setSelectedCards] = useState<StandardCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +86,7 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
     const { data: gamePlayers } = await supabase.from("game_players").select("user_id").eq("room_id", roomId);
 
     if (!gamePlayers) { setLoading(false); return; }
+    if (room) setCreatedBy(room.created_by);
 
     const infos = await Promise.all(
       gamePlayers.map(async (gp: any) => {
@@ -204,10 +206,21 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
             <div key={p.id} className="bg-accent/10 rounded-lg p-2 text-sm text-foreground">{p.name} {p.id === userId && "(toi)"}</div>
           ))}
           <p className="text-sm text-muted-foreground">{players.length}/2 joueurs</p>
-          {players.length >= 2 && players[0]?.id === userId && (
-            <Button onClick={startGame} className="w-full">Commencer</Button>
+          {players.length >= 2 && (createdBy === userId || players[0]?.id === userId) && (
+            <Button onClick={startGame} className="w-full">🎮 Commencer la partie</Button>
           )}
-          {players.length < 2 && <p className="text-xs text-muted-foreground animate-pulse">En attente...</p>}
+          {players.length < 2 && <p className="text-xs text-muted-foreground animate-pulse">En attente d'un adversaire...</p>}
+          
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-4 text-left space-y-2 mt-4">
+            <p className="text-sm font-bold text-foreground">📖 Comment jouer au Rami :</p>
+            <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+              <li>Chaque joueur reçoit 13 cartes</li>
+              <li>À ton tour : <strong>pioche</strong> une carte (deck ou défausse)</li>
+              <li>Puis <strong>pose des combinaisons</strong> (3+ cartes même valeur ou suite même couleur)</li>
+              <li>Termine ton tour en <strong>défaussant</strong> 1 carte</li>
+              <li>Le premier à vider sa main gagne ! 🏆</li>
+            </ul>
+          </div>
         </div>
       </div>
     );
