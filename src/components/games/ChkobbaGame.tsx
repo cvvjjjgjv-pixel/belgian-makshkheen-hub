@@ -288,8 +288,24 @@ const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
         <span className={`text-sm font-bold ${isMyTurn ? "text-accent" : "text-muted-foreground"}`}>
           {isMyTurn ? "🟢 Ton tour" : `⏳ Tour de ${getPlayerName(gameState.currentTurn)}`}
         </span>
-        <span className="text-xs text-muted-foreground">🃏 {gameState.deck.length}</span>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="sm" onClick={() => setShowRules(!showRules)} className="text-lg p-1 h-auto">ℹ️</Button>
+          <span className="text-xs text-muted-foreground">🃏 {gameState.deck.length}</span>
+        </div>
       </div>
+
+      {showRules && (
+        <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }} className="bg-accent/5 border border-accent/20 rounded-xl p-3 text-left space-y-1">
+          <p className="text-sm font-bold text-foreground">📖 Règles Chkobba :</p>
+          <ul className="text-xs text-muted-foreground space-y-1 list-disc list-inside">
+            <li>Joue une carte de ta main</li>
+            <li>Sélectionne des cartes sur la table dont la <strong>somme = ta carte</strong> pour capturer</li>
+            <li>Si tu vides la table → <strong>Chkobba !</strong> (+1 pt)</li>
+            <li>Sinon, ta carte est posée sur la table</li>
+            <li>Points : +1 majorité cartes, +1 majorité denari 🪙, +1 sept de denari</li>
+          </ul>
+        </motion.div>
+      )}
 
       {/* Opponent hand (face down) */}
       <div className="flex justify-center gap-1">
