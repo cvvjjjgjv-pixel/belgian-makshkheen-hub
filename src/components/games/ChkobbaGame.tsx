@@ -57,6 +57,7 @@ const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [selectedTable, setSelectedTable] = useState<Card[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRules, setShowRules] = useState(false);
 
   const loadGame = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
