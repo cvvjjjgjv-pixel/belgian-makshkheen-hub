@@ -72,6 +72,7 @@ const isValidMeld = (cards: StandardCard[]): boolean => {
 const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [createdBy, setCreatedBy] = useState<string | null>(null);
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCards, setSelectedCards] = useState<StandardCard[]>([]);
   const [loading, setLoading] = useState(true);
@@ -85,6 +86,7 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
     const { data: gamePlayers } = await supabase.from("game_players").select("user_id").eq("room_id", roomId);
 
     if (!gamePlayers) { setLoading(false); return; }
+    if (room) setCreatedBy(room.created_by);
 
     const infos = await Promise.all(
       gamePlayers.map(async (gp: any) => {
