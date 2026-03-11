@@ -52,6 +52,7 @@ const initGame = (players: string[]): GameState => {
 const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
   const [gameState, setGameState] = useState<GameState | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [createdBy, setCreatedBy] = useState<string | null>(null);
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [selectedCard, setSelectedCard] = useState<Card | null>(null);
   const [selectedTable, setSelectedTable] = useState<Card[]>([]);
@@ -74,6 +75,7 @@ const ChkobbaGame = ({ roomId, onBack }: ChkobbaGameProps) => {
       .eq("room_id", roomId);
 
     if (!gamePlayers) return;
+    if (room) setCreatedBy(room.created_by);
 
     const playerInfos = await Promise.all(
       gamePlayers.map(async (gp: any) => {
