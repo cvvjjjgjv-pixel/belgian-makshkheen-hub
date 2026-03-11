@@ -80,7 +80,7 @@ const GameLobby = ({ gameType, onBack, onGameStart }: GameLobbyProps) => {
     if (!user) { toast.error("Connecte-toi pour jouer"); return; }
 
     setCreating(true);
-    const maxPlayers = gameType === "rami" ? 4 : 2;
+    const maxPlayers = 2;
     const { data: room, error } = await supabase
       .from("game_rooms")
       .insert({ game_type: gameType, created_by: user.id, max_players: maxPlayers })
