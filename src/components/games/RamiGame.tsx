@@ -203,7 +203,7 @@ const RamiGame = ({ roomId, onBack }: RamiGameProps) => {
           {players.map(p => (
             <div key={p.id} className="bg-accent/10 rounded-lg p-2 text-sm text-foreground">{p.name} {p.id === userId && "(toi)"}</div>
           ))}
-          <p className="text-sm text-muted-foreground">{players.length}/4 joueurs</p>
+          <p className="text-sm text-muted-foreground">{players.length}/2 joueurs</p>
           {players.length >= 2 && players[0]?.id === userId && (
             <Button onClick={startGame} className="w-full">Commencer</Button>
           )}
