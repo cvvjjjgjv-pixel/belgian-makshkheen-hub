@@ -101,7 +101,7 @@ const TVTab = () => {
                     enableWorker: true,
                     startLevel: -1,
                   },
-                },
+                } as any,
               }}
               onError={(e: any) => {
                 console.error("Player error:", e);
