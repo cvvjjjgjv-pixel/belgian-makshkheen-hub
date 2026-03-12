@@ -94,14 +94,11 @@ const TVTab = () => {
               width="100%"
               height="100%"
               style={{ position: "absolute", top: 0, left: 0 }}
+              // @ts-ignore - react-player file config for HLS
               config={{
                 file: {
                   forceHLS: true,
-                  hlsOptions: {
-                    enableWorker: true,
-                    startLevel: -1,
-                  },
-                } as any,
+                },
               }}
               onError={(e: any) => {
                 console.error("Player error:", e);
