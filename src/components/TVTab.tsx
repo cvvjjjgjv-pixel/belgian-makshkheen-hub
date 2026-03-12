@@ -88,7 +88,7 @@ const TVTab = () => {
         <div className="aspect-video relative">
           {activeChannel.url ? (
             <ReactPlayer
-              url={activeChannel.url}
+              src={activeChannel.url}
               playing={playing}
               controls
               width="100%"
