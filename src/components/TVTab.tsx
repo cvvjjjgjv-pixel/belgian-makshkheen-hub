@@ -447,7 +447,7 @@ const TVTab = () => {
     .map((url, i) => ({ id: `custom-${i}`, name: `Custom ${i + 1}`, icon: "🔗", url: url.trim(), category: "Perso" }))
     .filter((ch) => ch.url.length > 0);
 
-  const allChannels = [...CHANNELS_DATA, ...apiChannels, ...customChannels];
+  const allChannels = [...CHANNELS_DATA, ...xtreamChannels, ...apiChannels, ...customChannels];
 
   // Set first channel on load
   useEffect(() => {
