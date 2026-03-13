@@ -72,7 +72,7 @@ const loadCustomLinks = (): string[] => {
 };
 
 // Stream Player - handles HLS (.m3u8) and YouTube
-const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
+const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => void; onReady?: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
