@@ -68,7 +68,7 @@ const Presentation = () => {
         className="mb-6"
       >
         <div className="w-28 h-28 rounded-full border-4 border-accent overflow-hidden shadow-[0_0_40px_hsl(51_100%_50%/0.3)]">
-          <img src={logo} alt="Makshkheen" className="w-full h-full object-cover" />
+          <img src={logo} alt="Mkachkhines" className="w-full h-full object-cover" />
         </div>
       </motion.div>
 
