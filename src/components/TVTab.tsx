@@ -8,9 +8,8 @@ import { toast } from "sonner";
 
 // Extract YouTube video ID for embedding
 const getYouTubeEmbedUrl = (url: string): string | null => {
-  // Standard video URL or youtu.be
   const m = url.match(/(?:v=|youtu\.be\/|\/live\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : null;
+  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1` : null;
 };
 const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
 
