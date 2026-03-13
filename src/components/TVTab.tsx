@@ -495,9 +495,21 @@ const TVTab = () => {
                         {ch.icon}
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <h4 className={`font-bold text-sm truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
-                          {ch.name}
-                        </h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className={`font-bold text-sm truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
+                            {ch.name}
+                          </h4>
+                          {channelStatus[ch.id] === "online" && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-green-500/15 text-green-500 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-green-500/30">
+                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />EN LIGNE
+                            </span>
+                          )}
+                          {channelStatus[ch.id] === "offline" && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-destructive/15 text-destructive text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-destructive/30">
+                              <span className="w-1.5 h-1.5 bg-destructive rounded-full" />HORS LIGNE
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-muted-foreground uppercase">{ch.category}</p>
                       </div>
                       {ch.quality && <span className="text-[9px] text-accent font-bold mr-2">{ch.quality}</span>}
