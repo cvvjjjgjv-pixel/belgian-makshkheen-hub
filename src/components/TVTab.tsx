@@ -267,6 +267,7 @@ const TVTab = () => {
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deadChannels, setDeadChannels] = useState<Set<string>>(loadDeadChannels);
+  const [proxyAvailable, setProxyAvailable] = useState(Boolean(IPTV_PROXY_BASE_URL));
 
   const markDead = useCallback((url: string) => {
     setDeadChannels(prev => {
