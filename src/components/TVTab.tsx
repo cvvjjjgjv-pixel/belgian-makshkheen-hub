@@ -74,6 +74,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
   const [loading, setLoading] = useState(true);
   const errorCountRef = useRef(0);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadedRef = useRef(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -82,6 +83,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
     setError(false);
     setLoading(true);
     errorCountRef.current = 0;
+    loadedRef.current = false;
 
     if (hlsRef.current) {
       hlsRef.current.destroy();
@@ -89,13 +91,14 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    // Timeout: if not playing within 12s, mark as dead
+    // Timeout: if not playing within 15s, mark as dead
     timeoutRef.current = setTimeout(() => {
-      if (loading) {
+      if (!loadedRef.current) {
         setError(true);
+        setLoading(false);
         onError();
       }
-    }, 12000);
+    }, 15000);
 
     if (Hls.isSupported()) {
       const hls = new Hls({
@@ -116,6 +119,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        loadedRef.current = true;
         setLoading(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (playing) {
@@ -154,6 +158,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
       video.addEventListener("loadeddata", () => {
+        loadedRef.current = true;
         setLoading(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         onSuccess();
