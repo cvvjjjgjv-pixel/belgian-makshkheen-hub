@@ -339,12 +339,14 @@ const TVTab = () => {
 
     const checkProxyAvailability = async () => {
       try {
+        // Use OPTIONS to check if the endpoint exists without triggering business logic errors
         const response = await fetch(IPTV_PROXY_BASE_URL, {
-          method: "GET",
-          headers: PROXY_REQUEST_HEADERS,
+          method: "OPTIONS",
         });
+        const bodyText = await response.text();
 
         if (!cancelled) {
+          // 404 means the function doesn't exist; any other status means it's deployed
           setProxyAvailable(response.status !== 404);
         }
       } catch {
