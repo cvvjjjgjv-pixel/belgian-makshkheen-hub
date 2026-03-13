@@ -102,7 +102,7 @@ const loadCustomLinks = (): string[] => {
 };
 
 // Stream Player - handles HLS (.m3u8) and YouTube
-const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => void; onReady?: () => void }) => {
+const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onError: () => void; onReady?: () => void; useProxy?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -110,14 +110,14 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
   const isYouTube = isYouTubeUrl(url);
 
   useEffect(() => {
-    if (isYouTube) return; // React Player handles YouTube
+    if (isYouTube) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); }
 
-    timeoutRef.current = setTimeout(() => onError(), 10000);
+    timeoutRef.current = setTimeout(() => onError(), 15000);
 
     const playVideo = () => {
       video.play().catch(() => {
@@ -127,11 +127,48 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
     };
 
     if (Hls.isSupported()) {
-      const hls = new Hls({
+      const hlsConfig: Partial<any> = {
         enableWorker: true,
         lowLatencyMode: true,
-        xhrSetup: (xhr) => { xhr.withCredentials = false; },
-      });
+      };
+
+      if (useProxy) {
+        const proxyBase = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+        hlsConfig.pLoader = class ProxyLoader extends Hls.DefaultConfig.loader {
+          load(context: any, config: any, callbacks: any) {
+            const originalUrl = context.url;
+            context.url = proxyBase;
+            context.headers = { 'Content-Type': 'application/json' };
+            // Override to POST with the real URL
+            const origOnSuccess = callbacks.onSuccess;
+            // Use fetch-based approach for proxy
+            fetch(proxyBase, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: originalUrl }),
+            })
+              .then(res => {
+                if (!res.ok) throw new Error(`Proxy error ${res.status}`);
+                return res.arrayBuffer();
+              })
+              .then(buffer => {
+                const response = {
+                  url: originalUrl,
+                  data: new Uint8Array(buffer),
+                };
+                const stats = { loading: { start: 0, first: 0, end: 0 }, loaded: buffer.byteLength, total: buffer.byteLength, bwEstimate: 0, retry: 0, parsed: undefined, buffering: { start: 0, first: 0, end: 0 } };
+                origOnSuccess(response, stats, context, undefined);
+              })
+              .catch(err => {
+                callbacks.onError({ code: 0, text: err.message }, context, undefined, stats);
+              });
+          }
+        };
+      } else {
+        hlsConfig.xhrSetup = (xhr: XMLHttpRequest) => { xhr.withCredentials = false; };
+      }
+
+      const hls = new Hls(hlsConfig);
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
