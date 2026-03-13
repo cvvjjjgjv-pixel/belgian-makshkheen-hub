@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Hls from "hls.js";
-import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle } from "lucide-react";
+import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle, ChevronUp, ChevronDown, Volume2, VolumeX, Power, SkipForward, SkipBack, Maximize, Minimize } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -154,6 +154,118 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
   );
 };
 
+// Mini Remote Control
+const RemoteControl = ({
+  allChannels,
+  activeChannel,
+  onChannelChange,
+  onRetry,
+}: {
+  allChannels: Channel[];
+  activeChannel: Channel;
+  onChannelChange: (ch: Channel) => void;
+  onRetry: () => void;
+}) => {
+  const [muted, setMuted] = useState(false);
+  const [expanded, setExpanded] = useState(true);
+
+  const currentIndex = allChannels.findIndex((c) => c.id === activeChannel.id);
+
+  const prevChannel = () => {
+    const idx = currentIndex <= 0 ? allChannels.length - 1 : currentIndex - 1;
+    onChannelChange(allChannels[idx]);
+  };
+
+  const nextChannel = () => {
+    const idx = currentIndex >= allChannels.length - 1 ? 0 : currentIndex + 1;
+    onChannelChange(allChannels[idx]);
+  };
+
+  const toggleMute = () => {
+    const videos = document.querySelectorAll("video");
+    videos.forEach((v) => { v.muted = !muted; });
+    setMuted(!muted);
+  };
+
+  const toggleFullscreen = () => {
+    const player = document.querySelector(".aspect-video video, .aspect-video iframe") as HTMLElement;
+    if (player) {
+      if (document.fullscreenElement) document.exitFullscreen();
+      else player.requestFullscreen?.();
+    }
+  };
+
+  if (!expanded) {
+    return (
+      <div className="mx-3 mt-2 flex justify-center">
+        <button onClick={() => setExpanded(true)} className="bg-card border border-border rounded-full px-4 py-1.5 text-[10px] font-bold text-muted-foreground hover:text-accent transition-colors">
+          📺 Télécommande
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      className="mx-3 mt-3 rounded-2xl bg-gradient-to-b from-card to-secondary border border-border shadow-lg overflow-hidden"
+    >
+      {/* Remote header */}
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border/50">
+        <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">📺 Télécommande</span>
+        <button onClick={() => setExpanded(false)} className="text-muted-foreground hover:text-foreground">
+          <Minimize className="w-3.5 h-3.5" />
+        </button>
+      </div>
+
+      {/* Controls */}
+      <div className="p-3 flex items-center justify-center gap-2">
+        {/* Power / Retry */}
+        <button onClick={onRetry} className="w-10 h-10 rounded-xl bg-destructive/10 border border-destructive/20 flex items-center justify-center text-destructive hover:bg-destructive/20 transition-colors" title="Réessayer">
+          <Power className="w-4 h-4" />
+        </button>
+
+        {/* Prev */}
+        <button onClick={prevChannel} className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent hover:bg-accent/20 transition-colors" title="Chaîne précédente">
+          <SkipBack className="w-4 h-4" />
+        </button>
+
+        {/* Channel Up/Down */}
+        <div className="flex flex-col gap-1">
+          <button onClick={prevChannel} className="w-12 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors" title="CH+">
+            <ChevronUp className="w-4 h-4" />
+          </button>
+          <button onClick={nextChannel} className="w-12 h-8 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center text-primary hover:bg-primary/20 transition-colors" title="CH-">
+            <ChevronDown className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Next */}
+        <button onClick={nextChannel} className="w-10 h-10 rounded-xl bg-accent/10 border border-accent/20 flex items-center justify-center text-accent hover:bg-accent/20 transition-colors" title="Chaîne suivante">
+          <SkipForward className="w-4 h-4" />
+        </button>
+
+        {/* Volume */}
+        <button onClick={toggleMute} className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-foreground hover:text-accent transition-colors" title={muted ? "Son activé" : "Couper le son"}>
+          {muted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+        </button>
+
+        {/* Fullscreen */}
+        <button onClick={toggleFullscreen} className="w-10 h-10 rounded-xl bg-secondary border border-border flex items-center justify-center text-foreground hover:text-accent transition-colors" title="Plein écran">
+          <Maximize className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Channel indicator */}
+      <div className="px-4 pb-2.5 text-center">
+        <span className="text-[10px] text-muted-foreground">
+          CH {currentIndex + 1}/{allChannels.length} — <span className="text-accent font-bold">{activeChannel.name}</span>
+        </span>
+      </div>
+    </motion.div>
+  );
+};
 const TVTab = () => {
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -314,6 +426,16 @@ const TVTab = () => {
           </div>
         )}
       </div>
+
+      {/* Mini Remote Control */}
+      {activeChannel && (
+        <RemoteControl
+          allChannels={allChannels}
+          activeChannel={activeChannel}
+          onChannelChange={handleChannelClick}
+          onRetry={handleRetry}
+        />
+      )}
 
       {/* Search */}
       <div className="mx-3 mt-4 relative">
