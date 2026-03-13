@@ -77,7 +77,7 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const isYouTube = url.includes("youtube.com") || url.includes("youtu.be");
+  const isYouTube = isYouTubeUrl(url);
 
   useEffect(() => {
     if (isYouTube) return; // React Player handles YouTube
