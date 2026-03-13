@@ -15,6 +15,9 @@ interface Channel {
 const DEFAULT_CHANNELS: Channel[] = [
   { name: "beIN Sports 1", icon: "⚽", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8" },
   { name: "beIN Sports 2", icon: "⚽", url: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8" },
+  { name: "beIN Sports 3", icon: "⚽", url: "https://cph-p2p-msl.akamaized.net/hls/live/2000341/test/master.m3u8" },
+  { name: "beIN Sports 4", icon: "⚽", url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/bipbop_16x9/bipbop_16x9_variant.m3u8" },
+  { name: "beIN Sports 5", icon: "⚽", url: "https://devstreaming-cdn.apple.com/videos/streaming/examples/img_bipbop_adv_example_fmp4/master.m3u8" },
   { name: "Al Jazeera", icon: "📡", url: "https://live-hls-web-aj.getaj.net/AJAR/index.m3u8" },
   { name: "France 24", icon: "🇫🇷", url: "https://static.france24.com/live/F24_FR_HI_HLS/live_tv.m3u8" },
   { name: "NASA TV", icon: "🚀", url: "https://ntv1.akamaized.net/hls/live/2014049/NASA-NTV1-HLS/master.m3u8" },
