@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield } from "lucide-react";
+import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield, Presentation } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
