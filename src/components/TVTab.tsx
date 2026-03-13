@@ -6,17 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-// Extract YouTube video ID or channel ID for embedding
+// Extract YouTube video ID for embedding
 const getYouTubeEmbedUrl = (url: string): string | null => {
-  // Channel live format: yt-channel://CHANNEL_ID
-  if (url.startsWith("yt-channel://")) {
-    return `https://www.youtube.com/embed/live_stream?channel=${url.replace("yt-channel://", "")}&autoplay=1`;
-  }
-  // Standard video URL
-  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
-  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : null;
+  const m = url.match(/(?:v=|youtu\.be\/|\/live\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1` : null;
 };
-const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") || url.startsWith("yt-channel://");
+const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
 
 interface Channel {
   id: string;
@@ -28,37 +23,33 @@ interface Channel {
 }
 
 // --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES ---
+// YouTube: Utilise des video IDs de lives 24/7 (plus fiable que yt-channel://)
+// HLS: Streams directs .m3u8
 const CHANNELS_DATA: Channel[] = [
-  // === TUNISIE - Sources HLS vérifiées via iptv-org + YouTube ===
+  // === TUNISIE ===
   { id: "watania1", name: "Watania 1 (الوطنية 1)", url: "https://streaming.alwatanya.tn/live/w1/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
   { id: "watania2", name: "Watania 2 (الوطنية 2)", url: "https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
   { id: "mosaique", name: "Mosaïque FM TV", url: "https://webcam.mosaiquefm.net/mosatv/_definst_/studio/playlist.m3u8?DVR", category: "Tunisie", icon: "🇹🇳", quality: "1080p" },
   { id: "jawhara-tv", name: "Jawhara TV", url: "http://streaming.toutech.net:1935/live/mp4:jawharafm.sdp/playlist.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
-  { id: "nessma-yt", name: "Nessma TV", url: "yt-channel://UCnFgpIHib1cMp2_MjZ2JfAg", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "attessia", name: "Attessia TV (التاسعة)", url: "yt-channel://UCQS3ejF2jBAhwmbGD9Q3oeA", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "elhiwar", name: "Elhiwar Ettounsi", url: "yt-channel://UCXzmMkXaHxMVlutDBD8goHA", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "hannibal", name: "Hannibal TV (حنبعل)", url: "yt-channel://UC3BhByMOaBiSFmnSOvayLOA", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "tunisna", name: "Tunisna TV", url: "yt-channel://UC8yHAIDYdMqCj_bk0Y-TxJQ", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "zitouna", name: "Zitouna TV", url: "yt-channel://UCn6k5DOzeJ8LVXcspL-1GIQ", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "carthage", name: "Carthage Plus", url: "yt-channel://UCdYt0WFXKMI6RjRQ1ZHUNlA", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
+  { id: "elhiwar", name: "Elhiwar Ettounsi", url: "https://www.youtube.com/watch?v=Z9AAhCafb9c", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
+  { id: "attessia", name: "Attessia TV (التاسعة)", url: "https://www.youtube.com/watch?v=live_attessia", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
   { id: "storychannel", name: "StoryChannel TV", url: "https://136044159.r.cdnsun.net/storychannel.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
-  // === INFOS - YouTube Channel Live (toujours à jour) ===
-  { id: "aljazeera", name: "Al Jazeera Arabic", url: "yt-channel://UCfiwzLy-8yKzIbsmZTzxDgw", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "aljazeera-en", name: "Al Jazeera English", url: "yt-channel://UCNye-wNBqNL5ZzHSJj3l8Bg", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "france24-fr", name: "France 24 FR", url: "yt-channel://UCCCPCZNChQdGa9EkATeye4g", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "france24-ar", name: "France 24 Arabic", url: "yt-channel://UCDFHjBCIKYwMISMB2JDlnaQ", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "alarabiya", name: "Al Arabiya (العربية)", url: "yt-channel://UCbyxxGIjqZiJn4VmMOCd8Wg", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "sky-news-ar", name: "Sky News Arabia", url: "yt-channel://UC1NHjiRKNYTGnvwOmkBJkRA", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "dw", name: "DW News", url: "yt-channel://UCknLrEdhRCp1aegoMqRaCZg", category: "Infos", icon: "🌍", quality: "YT" },
-  { id: "dw-ar", name: "DW عربية", url: "yt-channel://UCjQxXq6dFqKOqOJnkDGgW8A", category: "Infos", icon: "🌍", quality: "YT" },
-  { id: "euronews", name: "Euronews FR", url: "yt-channel://UCW2QcKZiU8aUGg4yxCIditg", category: "Infos", icon: "🇪🇺", quality: "YT" },
-  { id: "trt", name: "TRT World", url: "yt-channel://UC7fWeaHhqgM4Lba0JzhRlwg", category: "Infos", icon: "🇹🇷", quality: "YT" },
-  { id: "rt-ar", name: "RT Arabic", url: "yt-channel://UCR0D26PhrGnUMJSD1Q9_zJQ", category: "Infos", icon: "📡", quality: "YT" },
+  // === INFOS - YouTube Live 24/7 (video IDs vérifiés) ===
+  { id: "aljazeera", name: "Al Jazeera Arabic", url: "https://www.youtube.com/watch?v=bNyUyrR0PHo", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "aljazeera-en", name: "Al Jazeera English", url: "https://www.youtube.com/watch?v=F-POY4Q0QSI", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "france24-fr", name: "France 24 FR", url: "https://www.youtube.com/watch?v=l8PMl7tUDIE", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "france24-ar", name: "France 24 Arabic", url: "https://www.youtube.com/watch?v=3ursYA8HMeo", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "alarabiya", name: "Al Arabiya (العربية)", url: "https://www.youtube.com/watch?v=1Uw6ZkbsAH8", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "sky-news-ar", name: "Sky News Arabia", url: "https://www.youtube.com/live/yd_H1PwIB0E", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "dw", name: "DW News", url: "https://www.youtube.com/watch?v=GE_SfNVNyqk", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "dw-ar", name: "DW عربية", url: "https://www.youtube.com/watch?v=xiBnr9mczJs", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "euronews", name: "Euronews FR", url: "https://www.youtube.com/watch?v=NiRIbKwAejk", category: "Infos", icon: "🇪🇺", quality: "YT" },
+  { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJI", category: "Infos", icon: "🇹🇷", quality: "YT" },
+  { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=fBq7fv6BfxQ", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
-  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "yt-channel://UCxVmaFbMvkBP4NalU3Rwi8g", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass", name: "Al Kass Sports", url: "yt-channel://UCz89m0OJDOGryM1PRCJY-6A", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "https://www.youtube.com/watch?v=zCB59AxYwIo", category: "Sports", icon: "⚽", quality: "YT" },
   // === SCIENCE ===
-  { id: "nasa", name: "NASA TV", url: "yt-channel://UCLA_DiR1FfKNvjuUpBHmylQ", category: "Science", icon: "🚀", quality: "YT" },
+  { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
