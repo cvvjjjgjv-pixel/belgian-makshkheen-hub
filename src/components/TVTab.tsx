@@ -12,6 +12,7 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
   return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1` : null;
 };
 const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
+const isIframeUrl = (url: string) => url.startsWith("iframe:");
 
 interface Channel {
   id: string;
@@ -58,6 +59,7 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "alkass2", name: "Al Kass 2", url: "https://corsproxy.io/?https://liveeu-gcps.alkassdigital.net/alkass2-p/20260219T144749Z/mux_video_720p_ts/hdntl=exp=1773507399~acl=%2f*~data=hdntl~hmac=b9e7cb0b305eabe444e1e19c089f69a47025763bdc7ea47d901adac7f4ac534b/index-1.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass-web", name: "Al Kass (Web)", url: "iframe:https://www.alkass.net/alkass/live.aspx?ch=two", category: "Sports", icon: "🏆", quality: "WEB" },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
@@ -97,16 +99,17 @@ const loadCustomLinks = (): string[] => {
   return Array(10).fill("");
 };
 
-// Stream Player - handles HLS (.m3u8) and YouTube
+// Stream Player - handles HLS (.m3u8), YouTube, and iframe: URLs
 const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onError: () => void; onReady?: () => void; useProxy?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isYouTube = isYouTubeUrl(url);
+  const isIframe = isIframeUrl(url);
 
   useEffect(() => {
-    if (isYouTube) return;
+    if (isYouTube || isIframe) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
@@ -129,7 +132,6 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
         xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
           xhr.withCredentials = false;
           if (useProxy) {
-            // Only proxy manifest files (.m3u8), let segments (.ts) load directly from CDN
             const isManifest = xhrUrl.includes('.m3u8') || xhrUrl.includes('m3u8') || !xhrUrl.includes('.ts');
             if (isManifest) {
               const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
@@ -173,11 +175,24 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url, isYouTube]);
+  }, [url, isYouTube, isIframe]);
+
+  // iframe: prefix → render raw iframe
+  if (isIframe) {
+    const iframeSrc = url.replace(/^iframe:/, "");
+    return (
+      <iframe
+        src={iframeSrc}
+        className="w-full h-full absolute inset-0 border-0"
+        allow="autoplay; encrypted-media; fullscreen"
+        allowFullScreen
+        onLoad={() => onReady?.()}
+      />
+    );
+  }
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
-    // YouTube embeds are generally reliable — mark as online after load
     return (
       <iframe
         src={embedUrl || ""}
