@@ -31,6 +31,12 @@ const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 const IPTV_PROXY_BASE_URL = PROJECT_ID
   ? `https://${PROJECT_ID}.supabase.co/functions/v1/iptv-stream-proxy`
   : "";
+const PROXY_REQUEST_HEADERS = PUBLISHABLE_KEY
+  ? {
+      apikey: PUBLISHABLE_KEY,
+      Authorization: `Bearer ${PUBLISHABLE_KEY}`,
+    }
+  : undefined;
 
 // These are known-working public streams with proper CORS headers
 const RELIABLE_CHANNELS: Channel[] = [
