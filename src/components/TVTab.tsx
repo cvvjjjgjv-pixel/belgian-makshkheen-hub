@@ -58,7 +58,7 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass1", name: "Al Kass 1 (SD)", url: "http://174.122.201.218:1935/dkass_sd/my1/playlist.m3u8", category: "Sports", icon: "🏆", quality: "SD" },
+  { id: "alkass1", name: "Al Kass 1 (SD)", url: "https://corsproxy.io/?http://174.122.201.218:1935/dkass_sd/my1/playlist.m3u8", category: "Sports", icon: "🏆", quality: "SD" },
   { id: "alkass2", name: "Al Kass 2", url: "https://corsproxy.io/?https://liveeu-gcps.alkassdigital.net/alkass2-p/20260219T144749Z/mux_video_720p_ts/hdntl=exp=1773507399~acl=%2f*~data=hdntl~hmac=b9e7cb0b305eabe444e1e19c089f69a47025763bdc7ea47d901adac7f4ac534b/index-1.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
   { id: "alkass-web", name: "Al Kass (Web)", url: "iframe:https://www.alkass.net/alkass/live.aspx?ch=two", category: "Sports", icon: "🏆", quality: "WEB" },
   // === SCIENCE ===
