@@ -87,7 +87,7 @@ const Presentation = () => {
         transition={{ delay: 0.5 }}
         className="text-xl md:text-2xl font-bold text-foreground mb-2"
       >
-        Makshkheen Belgium
+        Mkachkhines Belgique
       </motion.p>
 
       <motion.p
