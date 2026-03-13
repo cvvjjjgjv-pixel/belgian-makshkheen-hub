@@ -608,8 +608,6 @@ const TVTab = () => {
           </div>
         )}
       </div>
-        </div>
-      )}
 
       {/* Channel Grid by category */}
       <div className="px-3 py-4 space-y-4">
