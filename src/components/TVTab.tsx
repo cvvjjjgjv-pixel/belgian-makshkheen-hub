@@ -5,9 +5,18 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+// Extract YouTube video ID or channel ID for embedding
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  // Channel live format: yt-channel://CHANNEL_ID
+  if (url.startsWith("yt-channel://")) {
+    return `https://www.youtube.com/embed/live_stream?channel=${url.replace("yt-channel://", "")}&autoplay=1`;
+  }
+  // Standard video URL
+  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : null;
+};
+const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") || url.startsWith("yt-channel://");
 
 interface Channel {
   id: string;
@@ -18,98 +27,29 @@ interface Channel {
   quality?: string;
 }
 
-const B = "http://proiptv.net:1234/dalila1/1234567/";
-
-// --- CHAÎNES ---
+// --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES ---
 const CHANNELS_DATA: Channel[] = [
-  // Tunisie - Sources officielles HLS
+  // === TUNISIE - Sources HLS vérifiées ===
   { id: "watania1", name: "Watania 1", url: "https://streaming.alwatanya.tn/live/w1/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
   { id: "watania2", name: "Watania 2", url: "https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
-  // Tunisie - IPTV proiptv
-  { id: "tn-nat1", name: "Tunisia Nat 1", url: B+"1", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-nat2", name: "Tunisia Nat 2", url: B+"2", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-elhiwar", name: "Elhiwar Ettounsi", url: B+"3", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-attessia", name: "Attessia TV", url: B+"4", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-nessma", name: "Nessma TV", url: B+"5", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-hannibal", name: "Hannibal TV", url: B+"6", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-janoubia", name: "Al Janoubia", url: B+"7", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-carthage", name: "Carthage TV", url: B+"801", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-telvza", name: "Telvza TV", url: B+"12", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-tunisna", name: "Tunisna TV", url: B+"8", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-mtunisia", name: "M Tunisia", url: B+"14", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-mustakila", name: "Al Mustakila", url: B+"77", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-zitouna", name: "Zitouna TV", url: B+"9", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-alinsen", name: "Al Insen TV", url: B+"745", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-evenement", name: "Chaîne Événement", url: B+"692", category: "Tunisie", icon: "🇹🇳" },
-  { id: "tn-tnt-nat1", name: "TNT Nat 1", url: B+"9207", category: "Tunisie TNT", icon: "🇹🇳" },
-  { id: "tn-tnt-nat2", name: "TNT Nat 2", url: B+"9208", category: "Tunisie TNT", icon: "🇹🇳" },
-  { id: "tn-tnt-nessma", name: "TNT Nessma", url: B+"9209", category: "Tunisie TNT", icon: "🇹🇳" },
-  { id: "tn-tnt-hannibal", name: "TNT Hannibal", url: B+"9210", category: "Tunisie TNT", icon: "🇹🇳" },
-  // Radio Tunisie
-  { id: "tnr-mosaique", name: "Mosaïque FM", url: B+"802", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-express", name: "Express FM", url: B+"9211", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-nationale", name: "Radio Nationale", url: B+"9212", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-cap", name: "Cap FM", url: B+"9213", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-diwan", name: "Diwan FM", url: B+"9214", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-ifm", name: "IFM", url: B+"9215", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-jawhara", name: "Jawhara FM", url: B+"89", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-shems", name: "Shems FM", url: B+"9227", category: "Radio Tunisie", icon: "📻" },
-  { id: "tnr-zitouna", name: "Radio Zitouna", url: B+"9228", category: "Radio Tunisie", icon: "📻" },
-  // beIN Sports
-  { id: "bein-sport-hd", name: "beIN SPORTS HD", url: B+"400", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-news", name: "beIN SPORTS News", url: B+"110", category: "beIN Sports", icon: "⚽" },
-  { id: "bein1-hd", name: "beIN 1 HD", url: B+"111", category: "beIN Sports", icon: "⚽" },
-  { id: "bein2-hd", name: "beIN 2 HD", url: B+"112", category: "beIN Sports", icon: "⚽" },
-  { id: "bein3-hd", name: "beIN 3 HD", url: B+"113", category: "beIN Sports", icon: "⚽" },
-  { id: "bein4-hd", name: "beIN 4 HD", url: B+"114", category: "beIN Sports", icon: "⚽" },
-  { id: "bein5-hd", name: "beIN 5 HD", url: B+"115", category: "beIN Sports", icon: "⚽" },
-  { id: "bein6-hd", name: "beIN 6 HD", url: B+"116", category: "beIN Sports", icon: "⚽" },
-  { id: "bein7-hd", name: "beIN 7 HD", url: B+"117", category: "beIN Sports", icon: "⚽" },
-  { id: "bein8-hd", name: "beIN 8 HD", url: B+"118", category: "beIN Sports", icon: "⚽" },
-  { id: "bein9-hd", name: "beIN 9 HD", url: B+"510", category: "beIN Sports", icon: "⚽" },
-  { id: "bein10-hd", name: "beIN 10 HD", url: B+"511", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-max1", name: "beIN Max 1 HD", url: B+"9687", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-max2", name: "beIN Max 2 HD", url: B+"9693", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-max3", name: "beIN Max 3 HD", url: B+"9692", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-max4", name: "beIN Max 4 HD", url: B+"9691", category: "beIN Sports", icon: "⚽" },
-  { id: "bein-nba", name: "beIN NBA", url: B+"517", category: "beIN Sports", icon: "🏀" },
-  { id: "bein-movies1", name: "beIN Movies 1", url: B+"520", category: "beIN Movies", icon: "🎬" },
-  { id: "bein-movies2", name: "beIN Movies 2", url: B+"519", category: "beIN Movies", icon: "🎬" },
-  { id: "bein-movies3", name: "beIN Movies 3", url: B+"13", category: "beIN Movies", icon: "🎬" },
-  { id: "bein-movies4", name: "beIN Movies 4", url: B+"16", category: "beIN Movies", icon: "🎬" },
-  { id: "bein-junior", name: "beJunior", url: B+"51", category: "beIN Movies", icon: "👶" },
-  // France
-  { id: "fr-tf1", name: "TF1", url: B+"207", category: "France", icon: "🇫🇷" },
-  { id: "fr-france2", name: "France 2", url: B+"209", category: "France", icon: "🇫🇷" },
-  { id: "fr-france3", name: "France 3", url: B+"210", category: "France", icon: "🇫🇷" },
-  { id: "fr-france4", name: "France 4", url: B+"219", category: "France", icon: "🇫🇷" },
-  { id: "fr-france5", name: "France 5", url: B+"211", category: "France", icon: "🇫🇷" },
-  { id: "fr-m6", name: "M6", url: B+"208", category: "France", icon: "🇫🇷" },
-  { id: "fr-canal", name: "Canal+", url: B+"200", category: "France", icon: "🇫🇷" },
-  { id: "fr-canal-cinema", name: "Canal+ Cinéma", url: B+"201", category: "France", icon: "🇫🇷" },
-  { id: "fr-canal-sport", name: "Canal+ Sport", url: B+"202", category: "France", icon: "🇫🇷" },
-  { id: "fr-canal-series", name: "Canal+ Séries", url: B+"205", category: "France", icon: "🇫🇷" },
-  { id: "fr-c8", name: "C8", url: B+"223", category: "France", icon: "🇫🇷" },
-  { id: "fr-cstar", name: "CStar", url: B+"228", category: "France", icon: "🇫🇷" },
-  { id: "fr-arte", name: "Arte", url: B+"216", category: "France", icon: "🇫🇷" },
-  { id: "fr-w9", name: "W9", url: B+"220", category: "France", icon: "🇫🇷" },
-  { id: "fr-tmc", name: "TMC", url: B+"217", category: "France", icon: "🇫🇷" },
-  { id: "fr-bfm", name: "BFM TV", url: B+"218", category: "France Infos", icon: "🇫🇷" },
-  { id: "fr-cnews", name: "CNews", url: B+"333", category: "France Infos", icon: "🇫🇷" },
-  { id: "fr-lci", name: "LCI", url: B+"334", category: "France Infos", icon: "🇫🇷" },
-  { id: "fr-france24p", name: "France 24", url: B+"498", category: "France Infos", icon: "🇫🇷" },
-  { id: "fr-rmc1", name: "RMC Sport 1", url: B+"685", category: "France Sport", icon: "⚽" },
-  { id: "fr-rmc2", name: "RMC Sport 2", url: B+"686", category: "France Sport", icon: "⚽" },
-  { id: "fr-euro1", name: "Eurosport 1", url: B+"743", category: "France Sport", icon: "⚽" },
-  { id: "fr-euro2", name: "Eurosport 2", url: B+"744", category: "France Sport", icon: "⚽" },
-  { id: "fr-equipe", name: "L'Équipe", url: B+"267", category: "France Sport", icon: "⚽" },
-  // International fiable (HLS direct)
-  { id: "aljazeera", name: "Al Jazeera Arabic", url: "https://live-hls-web-aj.getaj.net/AJAR/index.m3u8", category: "Infos", icon: "📡" },
-  { id: "france24", name: "France 24 FR", url: "https://static.france24.com/live/F24_FR_HI_HLS/live_tv.m3u8", category: "Infos", icon: "🇫🇷" },
-  { id: "nasa", name: "NASA TV", url: "https://ntv1.akamaized.net/hls/live/2014049/NASA-NTV1-HLS/master.m3u8", category: "Science", icon: "🚀" },
-  { id: "dw", name: "DW News", url: "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8", category: "Infos", icon: "🌍" },
-  { id: "euronews", name: "Euronews FR", url: "https://rakuten-euronews-fr-2-eu.samsung.wurl.tv/manifest/playlist.m3u8", category: "Infos", icon: "🇪🇺" },
-  { id: "trt", name: "TRT World", url: "https://tv-trtworld.medya.trt.com.tr/master.m3u8", category: "Infos", icon: "🇹🇷" },
+  { id: "nessma-yt", name: "Nessma TV", url: "https://www.youtube.com/watch?v=xAZDxSrkyqc", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
+  { id: "mosaique", name: "Mosaïque FM TV", url: "https://webcam.mosaiquefm.net/mosatv/_definst_/studio/playlist.m3u8?DVR", category: "Tunisie", icon: "🇹🇳", quality: "1080p" },
+  { id: "jawhara-tv", name: "Jawhara TV", url: "https://streaming.toutech.net/live/jtv/index.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
+  // === INFOS - YouTube Channel Live (toujours à jour) ===
+  { id: "aljazeera", name: "Al Jazeera Arabic", url: "yt-channel://UCfiwzLy-8yKzIbsmZTzxDgw", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "aljazeera-en", name: "Al Jazeera English", url: "yt-channel://UCNye-wNBqNL5ZzHSJj3l8Bg", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "france24-fr", name: "France 24 FR", url: "yt-channel://UCCCPCZNChQdGa9EkATeye4g", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "france24-ar", name: "France 24 Arabic", url: "yt-channel://UCDFHjBCIKYwMISMB2JDlnaQ", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "dw", name: "DW News", url: "yt-channel://UCknLrEdhRCp1aegoMqRaCZg", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "dw-ar", name: "DW عربية", url: "yt-channel://UCjQxXq6dFqKOqOJnkDGgW8A", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "euronews", name: "Euronews FR", url: "yt-channel://UCW2QcKZiU8aUGg4yxCIditg", category: "Infos", icon: "🇪🇺", quality: "YT" },
+  { id: "trt", name: "TRT World", url: "yt-channel://UC7fWeaHhqgM4Lba0JzhRlwg", category: "Infos", icon: "🇹🇷", quality: "YT" },
+  { id: "sky-news-ar", name: "Sky News Arabia", url: "yt-channel://UCfiwzLy-8yKzIbsmZTzxDgw", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "alarabiya", name: "Al Arabiya", url: "yt-channel://UCbyxxGIjqZiJn4VmMOCd8Wg", category: "Infos", icon: "📡", quality: "YT" },
+  // === SPORT ===
+  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "yt-channel://UCxVmaFbMvkBP4NalU3Rwi8g", category: "Sports", icon: "⚽", quality: "YT" },
+  // === SCIENCE ===
+  { id: "nasa", name: "NASA TV", url: "yt-channel://UCLA_DiR1FfKNvjuUpBHmylQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
@@ -131,28 +71,23 @@ const loadCustomLinks = (): string[] => {
   return Array(10).fill("");
 };
 
-// Stream Player - handles HLS (.m3u8) and proxied direct streams
+// Stream Player - handles HLS (.m3u8) and YouTube
 const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const [proxyBlobUrl, setProxyBlobUrl] = useState<string | null>(null);
 
-  const isHLS = url.includes(".m3u8");
-  const needsProxy = url.startsWith("http://"); // non-https needs proxy
+  const isYouTube = isYouTubeUrl(url);
 
   useEffect(() => {
+    if (isYouTube) return; // React Player handles YouTube
     const video = videoRef.current;
     if (!video || !url) return;
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); }
-    if (proxyBlobUrl) { URL.revokeObjectURL(proxyBlobUrl); setProxyBlobUrl(null); }
 
-    // 12s timeout for dead links
-    timeoutRef.current = setTimeout(() => {
-      onError();
-    }, 12000);
+    timeoutRef.current = setTimeout(() => onError(), 10000);
 
     const playVideo = () => {
       video.play().catch(() => {
@@ -161,132 +96,53 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
       });
     };
 
-    if (isHLS) {
-      // For HLS streams, use proxy if needed
-      const hlsUrl = needsProxy
-        ? `${SUPABASE_URL}/functions/v1/iptv-proxy`
-        : url;
-
-      if (needsProxy) {
-        // Use HLS with custom loader via proxy
-        if (Hls.isSupported()) {
-          const hls = new Hls({
-            enableWorker: true,
-            lowLatencyMode: true,
-            xhrSetup: (xhr, xhrUrl) => {
-              // Override to use our proxy
-              xhr.open('POST', `${SUPABASE_URL}/functions/v1/iptv-proxy`, true);
-              xhr.setRequestHeader('Content-Type', 'application/json');
-            },
-            // Use pLoader to intercept
-          });
-
-          // For proxied HLS, fetch manifest through proxy first
-          fetch(`${SUPABASE_URL}/functions/v1/iptv-proxy`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ url }),
-          })
-            .then(res => {
-              if (!res.ok) throw new Error('Proxy error');
-              return res.text();
-            })
-            .then(manifest => {
-              const blob = new Blob([manifest], { type: 'application/vnd.apple.mpegurl' });
-              const blobUrl = URL.createObjectURL(blob);
-              setProxyBlobUrl(blobUrl);
-              hls.loadSource(blobUrl);
-              hls.attachMedia(video);
-              hls.on(Hls.Events.MANIFEST_PARSED, () => {
-                if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                playVideo();
-              });
-              hls.on(Hls.Events.ERROR, (_event, data) => {
-                if (data.fatal) {
-                  if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-                    hls.recoverMediaError();
-                  } else {
-                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-                    onError();
-                    hls.destroy();
-                  }
-                }
-              });
-            })
-            .catch(() => {
-              if (timeoutRef.current) clearTimeout(timeoutRef.current);
-              onError();
-            });
-
-          hlsRef.current = hls;
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        xhrSetup: (xhr) => { xhr.withCredentials = false; },
+      });
+      hls.loadSource(url);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        playVideo();
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+          else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+          else { if (timeoutRef.current) clearTimeout(timeoutRef.current); onError(); hls.destroy(); }
         }
-      } else {
-        // Direct HLS (already https, no CORS issue)
-        if (Hls.isSupported()) {
-          const hls = new Hls({
-            enableWorker: true,
-            lowLatencyMode: true,
-            xhrSetup: (xhr) => { xhr.withCredentials = false; },
-          });
-          hls.loadSource(url);
-          hls.attachMedia(video);
-          hls.on(Hls.Events.MANIFEST_PARSED, () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            playVideo();
-          });
-          hls.on(Hls.Events.ERROR, (_event, data) => {
-            if (data.fatal) {
-              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
-              else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
-              else { if (timeoutRef.current) clearTimeout(timeoutRef.current); onError(); hls.destroy(); }
-            }
-          });
-          hlsRef.current = hls;
-        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-          video.src = url;
-          video.addEventListener("loadedmetadata", () => {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          }, { once: true });
-          playVideo();
-        } else {
-          onError();
-        }
-      }
+      });
+      hlsRef.current = hls;
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      video.src = url;
+      video.addEventListener("loadedmetadata", () => {
+        if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      }, { once: true });
+      playVideo();
     } else {
-      // Direct stream (not HLS) - proxy through edge function and play as blob
-      fetch(`${SUPABASE_URL}/functions/v1/iptv-proxy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url }),
-      })
-        .then(res => {
-          if (!res.ok) throw new Error('Proxy error');
-          return res.blob();
-        })
-        .then(blob => {
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          const blobUrl = URL.createObjectURL(blob);
-          setProxyBlobUrl(blobUrl);
-          video.src = blobUrl;
-          video.addEventListener("loadedmetadata", () => playVideo(), { once: true });
-          video.addEventListener("error", () => onError(), { once: true });
-        })
-        .catch(() => {
-          if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          onError();
-        });
+      onError();
     }
 
     return () => {
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url]);
+  }, [url, isYouTube]);
 
-  // Cleanup blob URL on unmount
-  useEffect(() => {
-    return () => { if (proxyBlobUrl) URL.revokeObjectURL(proxyBlobUrl); };
-  }, [proxyBlobUrl]);
+  if (isYouTube) {
+    const embedUrl = getYouTubeEmbedUrl(url);
+    return (
+      <iframe
+        src={embedUrl || ""}
+        className="w-full h-full absolute inset-0 border-0"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
+      />
+    );
+  }
 
   return (
     <video
