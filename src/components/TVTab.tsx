@@ -315,6 +315,16 @@ const TVTab = () => {
         )}
       </div>
 
+      {/* Mini Remote Control */}
+      {activeChannel && (
+        <RemoteControl
+          allChannels={allChannels}
+          activeChannel={activeChannel}
+          onChannelChange={handleChannelClick}
+          onRetry={handleRetry}
+        />
+      )}
+
       {/* Search */}
       <div className="mx-3 mt-4 relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
