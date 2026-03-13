@@ -296,17 +296,98 @@ const TVTab = () => {
   const [loading, setLoading] = useState(true);
   const [channelStatus, setChannelStatus] = useState<Record<string, "online" | "offline">>({});
 
+  const [xtreamConfig, setXtreamConfig] = useState<XtreamConfig | null>(loadXtreamConfig);
+  const [xtreamChannels, setXtreamChannels] = useState<Channel[]>([]);
+  const [xtreamLoading, setXtreamLoading] = useState(false);
+
   const markChannelStatus = useCallback((channelId: string, status: "online" | "offline") => {
     setChannelStatus((prev) => ({ ...prev, [channelId]: status }));
   }, []);
 
-  const fetchStreams = useCallback(async () => {
-    setLoading(true);
+  // Xtream Codes fetch
+  const fetchXtreamChannels = useCallback(async (config: XtreamConfig) => {
+    setXtreamLoading(true);
     try {
-      const cached = localStorage.getItem(STREAMS_CACHE_KEY);
+      // Check cache
+      const cached = localStorage.getItem(XTREAM_CACHE_KEY);
       if (cached) {
-        const { data, timestamp } = JSON.parse(cached);
-        if (Date.now() - timestamp < STREAMS_CACHE_TTL) {
+        const { data, timestamp, server } = JSON.parse(cached);
+        if (Date.now() - timestamp < STREAMS_CACHE_TTL && server === config.server) {
+          setXtreamChannels(data);
+          setXtreamLoading(false);
+          return;
+        }
+      }
+
+      // 1. Get categories
+      const catRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...config, action: 'get_live_categories' }),
+      });
+      const categories: any[] = catRes.ok ? await catRes.json() : [];
+      const catMap = new Map<string, string>();
+      if (Array.isArray(categories)) {
+        categories.forEach((c: any) => catMap.set(String(c.category_id), c.category_name || 'Sans catégorie'));
+      }
+
+      // 2. Get all live streams
+      const streamsRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...config, action: 'get_live_streams' }),
+      });
+      const streams: any[] = streamsRes.ok ? await streamsRes.json() : [];
+
+      if (!Array.isArray(streams)) {
+        toast.error("Réponse invalide du serveur Xtream");
+        setXtreamLoading(false);
+        return;
+      }
+
+      // Normalize server URL
+      const baseServer = config.server.replace(/\/$/, '');
+
+      const channels: Channel[] = streams.slice(0, 500).map((s: any, i: number) => ({
+        id: `xtream-${s.stream_id || i}`,
+        name: s.name || `Stream ${s.stream_id}`,
+        icon: "📺",
+        url: `${baseServer}/live/${config.username}/${config.password}/${s.stream_id}.m3u8`,
+        category: catMap.get(String(s.category_id)) || "Xtream",
+        quality: s.stream_type === "live" ? "LIVE" : undefined,
+      }));
+
+      localStorage.setItem(XTREAM_CACHE_KEY, JSON.stringify({ data: channels, timestamp: Date.now(), server: config.server }));
+      setXtreamChannels(channels);
+      toast.success(`${channels.length} chaînes Xtream chargées !`);
+    } catch (err) {
+      console.error("Xtream fetch error:", err);
+      toast.error("Erreur de connexion au serveur Xtream");
+      setXtreamChannels([]);
+    } finally {
+      setXtreamLoading(false);
+    }
+  }, []);
+
+  // Load Xtream on mount if config exists
+  useEffect(() => {
+    if (xtreamConfig) fetchXtreamChannels(xtreamConfig);
+  }, []);
+
+  const saveXtreamConfig = (config: XtreamConfig) => {
+    localStorage.setItem(XTREAM_STORAGE_KEY, JSON.stringify(config));
+    setXtreamConfig(config);
+    localStorage.removeItem(XTREAM_CACHE_KEY);
+    fetchXtreamChannels(config);
+  };
+
+  const clearXtreamConfig = () => {
+    localStorage.removeItem(XTREAM_STORAGE_KEY);
+    localStorage.removeItem(XTREAM_CACHE_KEY);
+    setXtreamConfig(null);
+    setXtreamChannels([]);
+    toast.success("Serveur Xtream déconnecté");
+  };
           setApiChannels(data);
           setLoading(false);
           return;
