@@ -133,10 +133,10 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
   }, [url, isYouTube]);
 
   if (isYouTube) {
-    const ytId = getYouTubeId(url);
+    const embedUrl = getYouTubeEmbedUrl(url);
     return (
       <iframe
-        src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+        src={embedUrl || ""}
         className="w-full h-full absolute inset-0 border-0"
         allow="autoplay; encrypted-media"
         allowFullScreen
