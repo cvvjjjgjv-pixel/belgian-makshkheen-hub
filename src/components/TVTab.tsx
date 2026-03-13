@@ -135,7 +135,8 @@ const HLSPlayer = ({
         xhrSetup: (xhr) => {
           xhr.withCredentials = false;
           if (PUBLISHABLE_KEY) xhr.setRequestHeader("apikey", PUBLISHABLE_KEY);
-          if (authToken) xhr.setRequestHeader("authorization", `Bearer ${authToken}`);
+          const accessToken = authToken || PUBLISHABLE_KEY || "";
+          if (accessToken) xhr.setRequestHeader("authorization", `Bearer ${accessToken}`);
           xhr.setRequestHeader("x-client-info", "tv-player");
         },
       });
@@ -276,17 +277,17 @@ const TVTab = () => {
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deadChannels, setDeadChannels] = useState<Set<string>>(loadDeadChannels);
-  const [authToken, setAuthToken] = useState("");
+  const [authToken, setAuthToken] = useState(PUBLISHABLE_KEY || "");
 
   useEffect(() => {
     const loadSession = async () => {
       const { data } = await supabase.auth.getSession();
-      setAuthToken(data.session?.access_token || "");
+      setAuthToken(data.session?.access_token || PUBLISHABLE_KEY || "");
     };
     loadSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthToken(session?.access_token || "");
+      setAuthToken(session?.access_token || PUBLISHABLE_KEY || "");
     });
 
     return () => listener.subscription.unsubscribe();
