@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield } from "lucide-react";
+import { Bell, User, CloudSun, CloudRain, Sun, Cloud, Snowflake, CloudLightning, MapPin, Shield, Presentation } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import logo from "@/assets/logo.png";
 import { supabase } from "@/integrations/supabase/client";
@@ -111,6 +111,9 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
                 <span className="text-[9px] text-muted-foreground hidden sm:inline">{weather.city}</span>
               </div>
             )}
+            <button onClick={() => navigate("/presentation")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Présentation">
+              <Presentation className="w-5 h-5" />
+            </button>
             {isAdmin && (
               <button onClick={() => navigate("/admin")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Dashboard Admin">
                 <Shield className="w-5 h-5" />
