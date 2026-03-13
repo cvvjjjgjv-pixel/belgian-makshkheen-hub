@@ -281,12 +281,12 @@ const TVTab = () => {
   useEffect(() => {
     const loadSession = async () => {
       const { data } = await supabase.auth.getSession();
-      setAuthToken(data.session?.access_token || "");
+      setAuthToken(data.session?.access_token || PUBLISHABLE_KEY || "");
     };
     loadSession();
 
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      setAuthToken(session?.access_token || "");
+      setAuthToken(session?.access_token || PUBLISHABLE_KEY || "");
     });
 
     return () => listener.subscription.unsubscribe();
