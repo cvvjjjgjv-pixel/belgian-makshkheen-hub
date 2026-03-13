@@ -18,8 +18,8 @@ interface Channel {
 // --- CHAÎNES FIABLES ---
 const CHANNELS_DATA: Channel[] = [
   // Tunisie
-  { id: "watania1", name: "Watania 1", url: "https://streaming.alwatanya.tn/live/w1/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
-  { id: "watania2", name: "Watania 2", url: "https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
+  { id: "watania1", name: "Watania 1", url: "https://corsproxy.io/?https://streaming.alwatanya.tn/live/w1/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
+  { id: "watania2", name: "Watania 2", url: "https://corsproxy.io/?https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
   // Sports - Liens test stables
   { id: "bein1", name: "beIN SPORTS 1 HD", url: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8", category: "Sports", icon: "⚽" },
   { id: "bein2", name: "beIN SPORTS 2 HD", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", category: "Sports", icon: "⚽" },
