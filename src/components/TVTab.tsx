@@ -59,7 +59,7 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "alkass_direct", name: "Al Kass HD", url: "http://174.122.201.218:1935/dkass_hd/my1/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass_secours", name: "Al Kass (Secours)", url: "https://shls-alkass-ak.akamaized.net/out/v1/a24d2bd5e2fb4e0ca2dcb9ff1c96af05/index.m3u8", category: "Sports", icon: "🏆" },
+  { id: "alkass_secours", name: "Al Kass (Secours)", url: "https://shls-alkass-ak.akamaized.net/out/v1/a24d2bd5e2fb4e0ca2dcb9ff1c96af05/index.m3u8", category: "Sports", icon: "🏆", useProxy: true },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
