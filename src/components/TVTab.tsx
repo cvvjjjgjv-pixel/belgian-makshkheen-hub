@@ -30,7 +30,7 @@ interface Channel {
 const CHANNELS_DATA: Channel[] = [
   // === TUNISIE ===
   { id: "watania1", name: "Watania 1 (الوطنية 1)", url: "https://www.youtube.com/watch?v=n40b8OsYrRQ", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "watania2", name: "Watania 2 (الوطنية 2)", url: "https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
+  { id: "watania2", name: "Watania 2 (الوطنية 2)", url: "https://www.youtube.com/watch?v=EUne0-bLb48", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
   { id: "mosaique", name: "Mosaïque FM TV", url: "https://webcam.mosaiquefm.net/mosatv/_definst_/studio/playlist.m3u8?DVR", category: "Tunisie", icon: "🇹🇳", quality: "1080p" },
   { id: "jawhara-tv", name: "Jawhara TV", url: "http://streaming.toutech.net:1935/live/mp4:jawharafm.sdp/playlist.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
   { id: "elhiwar", name: "Elhiwar Ettounsi", url: "https://www.youtube.com/watch?v=Z9AAhCafb9c", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
