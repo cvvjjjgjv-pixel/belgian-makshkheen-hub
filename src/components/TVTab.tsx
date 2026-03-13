@@ -388,6 +388,14 @@ const TVTab = () => {
     setXtreamChannels([]);
     toast.success("Serveur Xtream déconnecté");
   };
+
+  const fetchStreams = useCallback(async () => {
+    setLoading(true);
+    try {
+      const cached = localStorage.getItem(STREAMS_CACHE_KEY);
+      if (cached) {
+        const { data, timestamp } = JSON.parse(cached);
+        if (Date.now() - timestamp < STREAMS_CACHE_TTL) {
           setApiChannels(data);
           setLoading(false);
           return;
