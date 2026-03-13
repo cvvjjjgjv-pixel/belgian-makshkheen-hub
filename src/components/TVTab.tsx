@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Hls from "hls.js";
-import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle } from "lucide-react";
+import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle, ChevronUp, ChevronDown, Volume2, VolumeX, Power, SkipForward, SkipBack, Maximize, Minimize } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
