@@ -286,6 +286,36 @@ const RemoteControl = ({
     </motion.div>
   );
 };
+// Xtream Login Form
+const XtreamLoginForm = ({ onConnect, loading }: { onConnect: (config: XtreamConfig) => void; loading: boolean }) => {
+  const [server, setServer] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!server || !username || !password) { toast.error("Remplissez tous les champs"); return; }
+    let normalizedServer = server.trim();
+    if (!normalizedServer.startsWith("http")) normalizedServer = `http://${normalizedServer}`;
+    onConnect({ server: normalizedServer, username: username.trim(), password: password.trim() });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <Input value={server} onChange={(e) => setServer(e.target.value)} placeholder="http://serveur:port" className="text-xs h-9 bg-secondary border-border font-mono" />
+      <div className="flex gap-2">
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Login" className="text-xs h-9 bg-secondary border-border" />
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe" className="text-xs h-9 bg-secondary border-border" />
+      </div>
+      <Button type="submit" size="sm" className="w-full text-xs bg-accent text-accent-foreground hover:bg-accent/80 font-bold" disabled={loading}>
+        {loading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogIn className="w-3 h-3 mr-1" />}
+        Connecter
+      </Button>
+      <p className="text-[9px] text-muted-foreground text-center">Compatible TiviMate, Xtream UI, et serveurs IPTV standards</p>
+    </form>
+  );
+};
+
 const TVTab = () => {
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [showSettings, setShowSettings] = useState(false);
