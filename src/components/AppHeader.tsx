@@ -111,6 +111,9 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
                 <span className="text-[9px] text-muted-foreground hidden sm:inline">{weather.city}</span>
               </div>
             )}
+            <button onClick={() => navigate("/presentation")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Présentation">
+              <Presentation className="w-5 h-5" />
+            </button>
             {isAdmin && (
               <button onClick={() => navigate("/admin")} className="relative text-accent p-1 rounded-lg hover:bg-accent/10 transition-colors" title="Dashboard Admin">
                 <Shield className="w-5 h-5" />
