@@ -11,6 +11,8 @@ interface Channel {
   icon: string;
   url: string;
   quality?: string;
+  referrer?: string | null;
+  userAgent?: string | null;
 }
 
 interface StreamData {
@@ -24,6 +26,17 @@ interface StreamData {
 }
 
 const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const IPTV_PROXY_BASE_URL = PROJECT_ID
+  ? `https://${PROJECT_ID}.supabase.co/functions/v1/iptv-stream-proxy`
+  : "";
+const PROXY_REQUEST_HEADERS = PUBLISHABLE_KEY
+  ? {
+      apikey: PUBLISHABLE_KEY,
+      Authorization: `Bearer ${PUBLISHABLE_KEY}`,
+    }
+  : undefined;
 
 // These are known-working public streams with proper CORS headers
 const RELIABLE_CHANNELS: Channel[] = [
@@ -51,6 +64,16 @@ const STORAGE_KEY = "tv-bein-custom-links";
 const STREAMS_CACHE_KEY = "tv-iptv-streams-cache";
 const STREAMS_CACHE_TTL = 30 * 60 * 1000;
 const DEAD_CHANNELS_KEY = "tv-dead-channels";
+
+const buildChannelPlaybackUrl = (channel: Channel) => {
+  if (!IPTV_PROXY_BASE_URL) return channel.url;
+
+  const params = new URLSearchParams({ url: channel.url });
+  if (channel.referrer) params.set("referrer", channel.referrer);
+  if (channel.userAgent) params.set("user_agent", channel.userAgent);
+
+  return `${IPTV_PROXY_BASE_URL}?${params.toString()}`;
+};
 
 const loadCustomLinks = (): string[] => {
   try {
@@ -118,8 +141,12 @@ const HLSPlayer = ({ url, playing, onError }: { url: string; playing: boolean; o
         manifestLoadingRetryDelay: 1000,
         levelLoadingMaxRetry: 1,
         fragLoadingMaxRetry: 1,
-        xhrSetup: (xhr) => {
+        xhrSetup: (xhr, requestUrl) => {
           xhr.withCredentials = false;
+          if (IPTV_PROXY_BASE_URL && requestUrl?.startsWith(IPTV_PROXY_BASE_URL) && PROXY_REQUEST_HEADERS) {
+            xhr.setRequestHeader("apikey", PROXY_REQUEST_HEADERS.apikey);
+            xhr.setRequestHeader("Authorization", PROXY_REQUEST_HEADERS.Authorization);
+          }
         },
       });
 
@@ -240,6 +267,7 @@ const TVTab = () => {
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deadChannels, setDeadChannels] = useState<Set<string>>(loadDeadChannels);
+  const [proxyAvailable, setProxyAvailable] = useState(Boolean(IPTV_PROXY_BASE_URL));
 
   const markDead = useCallback((url: string) => {
     setDeadChannels(prev => {
@@ -283,6 +311,8 @@ const TVTab = () => {
             icon: "⚽",
             url: s.url,
             quality: s.quality || undefined,
+            referrer: s.referrer,
+            userAgent: s.user_agent,
           });
         }
       }
@@ -301,6 +331,35 @@ const TVTab = () => {
   }, []);
 
   useEffect(() => { fetchStreams(); }, [fetchStreams]);
+
+  useEffect(() => {
+    if (!IPTV_PROXY_BASE_URL) return;
+
+    let cancelled = false;
+
+    const checkProxyAvailability = async () => {
+      try {
+        const response = await fetch(IPTV_PROXY_BASE_URL, {
+          method: "GET",
+          headers: PROXY_REQUEST_HEADERS,
+        });
+
+        if (!cancelled) {
+          setProxyAvailable(response.status !== 404);
+        }
+      } catch {
+        if (!cancelled) {
+          setProxyAvailable(false);
+        }
+      }
+    };
+
+    checkProxyAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customLinks));
@@ -341,6 +400,9 @@ const TVTab = () => {
 
   const isActive = (ch: Channel) => activeChannel?.name === ch.name && activeChannel?.url === ch.url;
   const isDead = (ch: Channel) => deadChannels.has(ch.url);
+  const activeChannelPlaybackUrl = activeChannel
+    ? (proxyAvailable && Hls.isSupported() ? buildChannelPlaybackUrl(activeChannel) : activeChannel.url)
+    : null;
 
   return (
     <div className="pb-4">
@@ -362,11 +424,11 @@ const TVTab = () => {
       {/* Video Player */}
       <div className="mx-3 rounded-2xl overflow-hidden border-2 border-accent/30 bg-black">
         <div className="aspect-video relative">
-          {activeChannel?.url ? (
+          {activeChannelPlaybackUrl ? (
             <HLSPlayer
-              url={activeChannel.url}
+              url={activeChannelPlaybackUrl}
               playing={playing}
-              onError={() => markDead(activeChannel.url)}
+              onError={() => activeChannel && markDead(activeChannel.url)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-background aspect-video">
