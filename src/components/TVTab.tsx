@@ -364,6 +364,9 @@ const TVTab = () => {
 
   const isActive = (ch: Channel) => activeChannel?.name === ch.name && activeChannel?.url === ch.url;
   const isDead = (ch: Channel) => deadChannels.has(ch.url);
+  const activeChannelPlaybackUrl = activeChannel
+    ? (Hls.isSupported() ? buildChannelPlaybackUrl(activeChannel) : activeChannel.url)
+    : null;
 
   return (
     <div className="pb-4">
@@ -385,11 +388,11 @@ const TVTab = () => {
       {/* Video Player */}
       <div className="mx-3 rounded-2xl overflow-hidden border-2 border-accent/30 bg-black">
         <div className="aspect-video relative">
-          {activeChannel?.url ? (
+          {activeChannelPlaybackUrl ? (
             <HLSPlayer
-              url={activeChannel.url}
+              url={activeChannelPlaybackUrl}
               playing={playing}
-              onError={() => markDead(activeChannel.url)}
+              onError={() => activeChannel && markDead(activeChannel.url)}
             />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-muted to-background aspect-video">
