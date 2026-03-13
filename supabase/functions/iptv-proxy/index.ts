@@ -56,9 +56,9 @@ serve(async (req) => {
       'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
     };
 
-    if (urlObj.hostname.includes('alkassdigital.net')) {
-      headers['Referer'] = 'https://www.alkass.net/';
-      headers['Origin'] = 'https://www.alkass.net';
+    if (urlObj.hostname.includes('alkass') || urlObj.hostname.includes('akamaized.net')) {
+      headers['Referer'] = 'https://shoof.alkass.net/';
+      headers['Origin'] = 'https://shoof.alkass.net';
     } else if (urlObj.hostname.includes('elahmad.com')) {
       headers['Referer'] = 'http://www.elahmad.com/tv/livetv/Arabian.htm';
       headers['Accept'] = 'application/vnd.apple.mpegurl, */*';
