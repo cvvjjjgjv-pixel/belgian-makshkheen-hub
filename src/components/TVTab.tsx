@@ -593,11 +593,21 @@ const TVTab = () => {
         />
       </div>
 
-      {/* API info */}
-      {!loading && apiChannels.length > 0 && (
-        <div className="mx-3 mt-2 flex items-center gap-1.5 px-1">
-          <Globe className="w-3 h-3 text-accent" />
-          <span className="text-[10px] text-muted-foreground">{apiChannels.length} chaînes sport via iptv-org</span>
+      {/* Sources info */}
+      <div className="mx-3 mt-2 flex flex-wrap items-center gap-3 px-1">
+        {xtreamChannels.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Radio className="w-3 h-3 text-accent" />
+            <span className="text-[10px] text-muted-foreground">{xtreamChannels.length} chaînes Xtream</span>
+          </div>
+        )}
+        {!loading && apiChannels.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3 h-3 text-accent" />
+            <span className="text-[10px] text-muted-foreground">{apiChannels.length} chaînes sport via iptv-org</span>
+          </div>
+        )}
+      </div>
         </div>
       )}
 
