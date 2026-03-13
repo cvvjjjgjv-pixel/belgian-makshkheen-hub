@@ -333,6 +333,35 @@ const TVTab = () => {
   useEffect(() => { fetchStreams(); }, [fetchStreams]);
 
   useEffect(() => {
+    if (!IPTV_PROXY_BASE_URL) return;
+
+    let cancelled = false;
+
+    const checkProxyAvailability = async () => {
+      try {
+        const response = await fetch(IPTV_PROXY_BASE_URL, {
+          method: "GET",
+          headers: PROXY_REQUEST_HEADERS,
+        });
+
+        if (!cancelled) {
+          setProxyAvailable(response.status !== 404);
+        }
+      } catch {
+        if (!cancelled) {
+          setProxyAvailable(false);
+        }
+      }
+    };
+
+    checkProxyAvailability();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customLinks));
   }, [customLinks]);
 
