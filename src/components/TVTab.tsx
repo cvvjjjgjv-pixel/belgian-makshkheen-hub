@@ -158,6 +158,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
       video.addEventListener("loadeddata", () => {
+        loadedRef.current = true;
         setLoading(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         onSuccess();
