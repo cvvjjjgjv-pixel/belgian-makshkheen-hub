@@ -251,7 +251,7 @@ const Presentation = () => {
         transition={{ delay: 0.3 }}
         className="text-3xl md:text-4xl font-black text-foreground mb-4"
       >
-        Rejoignez les <span className="text-accent">Makshkheen</span>
+        Rejoignez les <span className="text-accent">Mkachkhines</span>
       </motion.h2>
 
       <motion.p

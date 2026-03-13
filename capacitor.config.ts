@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.belgianmakshkheenhub',
-  appName: 'Makshkheen Hub',
+  appName: 'Mkachkhines Belgique',
   webDir: 'dist',
   server: {
     url: 'https://277dd843-618e-46cd-bcdc-cc84870532b3.lovableproject.com?forceHideBadge=true',

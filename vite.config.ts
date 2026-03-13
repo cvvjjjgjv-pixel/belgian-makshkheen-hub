@@ -23,8 +23,8 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "Makshkheen Hub",
-        short_name: "Makshkheen",
+        name: "Mkachkhines Belgique",
+        short_name: "Mkachkhines",
         description: "La communauté des supporters - Actualités, Forum, Chat en direct",
         theme_color: "#D4A017",
         background_color: "#0A0A0A",
