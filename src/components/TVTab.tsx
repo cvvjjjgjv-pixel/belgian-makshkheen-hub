@@ -58,8 +58,7 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass_direct", name: "Al Kass HD", url: "http://174.122.201.218:1935/dkass_hd/my1/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass_secours", name: "Al Kass (Secours)", url: "https://shls-alkass-ak.akamaized.net/out/v1/a24d2bd5e2fb4e0ca2dcb9ff1c96af05/index.m3u8", category: "Sports", icon: "🏆", useProxy: true },
+  { id: "alkass_live", name: "Al Kass 2", url: "iframe:https://www.alkass.net/alkass/live.aspx?ch=two", category: "Sports", icon: "🏆", quality: "LIVE" },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
@@ -571,6 +570,15 @@ const TVTab = () => {
               <Button size="sm" onClick={handleRetry} className="mt-4 bg-accent text-accent-foreground hover:bg-accent/80 text-xs font-bold uppercase">
                 Réessayer
               </Button>
+            </div>
+          ) : activeChannel?.url?.startsWith('iframe:') ? (
+            <div className="relative w-full aspect-video overflow-hidden bg-black rounded-xl">
+              <iframe 
+                src={activeChannel.url.replace('iframe:', '')} 
+                className="absolute top-[-25%] md:top-[-28%] left-0 w-full h-[150%]" 
+                style={{ border: 'none' }}
+                allowFullScreen
+              />
             </div>
           ) : activeChannel?.url ? (
             <StreamPlayer url={activeChannel.url} useProxy={activeChannel.useProxy} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
