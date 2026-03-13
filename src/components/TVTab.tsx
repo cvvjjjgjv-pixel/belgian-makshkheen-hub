@@ -131,16 +131,13 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
   }, [url, isYouTube]);
 
   if (isYouTube) {
+    const ytId = getYouTubeId(url);
     return (
-      <ReactPlayer
-        url={url}
-        playing
-        controls
-        width="100%"
-        height="100%"
-        style={{ position: 'absolute', top: 0, left: 0 }}
-        onError={() => onError()}
-        config={{ youtube: { rel: 0 } }}
+      <iframe
+        src={`https://www.youtube.com/embed/${ytId}?autoplay=1&rel=0`}
+        className="w-full h-full absolute inset-0 border-0"
+        allow="autoplay; encrypted-media"
+        allowFullScreen
       />
     );
   }
