@@ -131,11 +131,15 @@ const loadCustomLinks = (): string[] => {
   return Array(10).fill("");
 };
 
-// HLS Video Player
-const HLSPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
+// Stream Player - handles HLS (.m3u8) and proxied direct streams
+const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [proxyBlobUrl, setProxyBlobUrl] = useState<string | null>(null);
+
+  const isHLS = url.includes(".m3u8");
+  const needsProxy = url.startsWith("http://"); // non-https needs proxy
 
   useEffect(() => {
     const video = videoRef.current;
@@ -143,53 +147,134 @@ const HLSPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); }
+    if (proxyBlobUrl) { URL.revokeObjectURL(proxyBlobUrl); setProxyBlobUrl(null); }
 
-    // 8s timeout for dead links
+    // 12s timeout for dead links
     timeoutRef.current = setTimeout(() => {
       onError();
-    }, 8000);
+    }, 12000);
 
-    if (Hls.isSupported()) {
-      const hls = new Hls({
-        enableWorker: true,
-        lowLatencyMode: true,
-        xhrSetup: (xhr) => { xhr.withCredentials = false; },
+    const playVideo = () => {
+      video.play().catch(() => {
+        video.muted = true;
+        video.play().catch(() => {});
       });
+    };
 
-      hls.loadSource(url);
-      hls.attachMedia(video);
+    if (isHLS) {
+      // For HLS streams, use proxy if needed
+      const hlsUrl = needsProxy
+        ? `${SUPABASE_URL}/functions/v1/iptv-proxy`
+        : url;
 
-      hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        video.play().catch(() => {
-          video.muted = true;
-          video.play().catch(() => {});
-        });
-      });
+      if (needsProxy) {
+        // Use HLS with custom loader via proxy
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            xhrSetup: (xhr, xhrUrl) => {
+              // Override to use our proxy
+              xhr.open('POST', `${SUPABASE_URL}/functions/v1/iptv-proxy`, true);
+              xhr.setRequestHeader('Content-Type', 'application/json');
+            },
+            // Use pLoader to intercept
+          });
 
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            hls.startLoad();
-          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            onError();
-            hls.destroy();
-          }
+          // For proxied HLS, fetch manifest through proxy first
+          fetch(`${SUPABASE_URL}/functions/v1/iptv-proxy`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ url }),
+          })
+            .then(res => {
+              if (!res.ok) throw new Error('Proxy error');
+              return res.text();
+            })
+            .then(manifest => {
+              const blob = new Blob([manifest], { type: 'application/vnd.apple.mpegurl' });
+              const blobUrl = URL.createObjectURL(blob);
+              setProxyBlobUrl(blobUrl);
+              hls.loadSource(blobUrl);
+              hls.attachMedia(video);
+              hls.on(Hls.Events.MANIFEST_PARSED, () => {
+                if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                playVideo();
+              });
+              hls.on(Hls.Events.ERROR, (_event, data) => {
+                if (data.fatal) {
+                  if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+                    hls.recoverMediaError();
+                  } else {
+                    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+                    onError();
+                    hls.destroy();
+                  }
+                }
+              });
+            })
+            .catch(() => {
+              if (timeoutRef.current) clearTimeout(timeoutRef.current);
+              onError();
+            });
+
+          hlsRef.current = hls;
         }
-      });
-
-      hlsRef.current = hls;
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      video.src = url;
-      video.addEventListener("loadedmetadata", () => {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      }, { once: true });
-      video.play().catch(() => { video.muted = true; video.play().catch(() => {}); });
+      } else {
+        // Direct HLS (already https, no CORS issue)
+        if (Hls.isSupported()) {
+          const hls = new Hls({
+            enableWorker: true,
+            lowLatencyMode: true,
+            xhrSetup: (xhr) => { xhr.withCredentials = false; },
+          });
+          hls.loadSource(url);
+          hls.attachMedia(video);
+          hls.on(Hls.Events.MANIFEST_PARSED, () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            playVideo();
+          });
+          hls.on(Hls.Events.ERROR, (_event, data) => {
+            if (data.fatal) {
+              if (data.type === Hls.ErrorTypes.NETWORK_ERROR) hls.startLoad();
+              else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) hls.recoverMediaError();
+              else { if (timeoutRef.current) clearTimeout(timeoutRef.current); onError(); hls.destroy(); }
+            }
+          });
+          hlsRef.current = hls;
+        } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+          video.src = url;
+          video.addEventListener("loadedmetadata", () => {
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          }, { once: true });
+          playVideo();
+        } else {
+          onError();
+        }
+      }
     } else {
-      onError();
+      // Direct stream (not HLS) - proxy through edge function and play as blob
+      fetch(`${SUPABASE_URL}/functions/v1/iptv-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url }),
+      })
+        .then(res => {
+          if (!res.ok) throw new Error('Proxy error');
+          return res.blob();
+        })
+        .then(blob => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          const blobUrl = URL.createObjectURL(blob);
+          setProxyBlobUrl(blobUrl);
+          video.src = blobUrl;
+          video.addEventListener("loadedmetadata", () => playVideo(), { once: true });
+          video.addEventListener("error", () => onError(), { once: true });
+        })
+        .catch(() => {
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          onError();
+        });
     }
 
     return () => {
@@ -197,6 +282,11 @@ const HLSPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [url]);
+
+  // Cleanup blob URL on unmount
+  useEffect(() => {
+    return () => { if (proxyBlobUrl) URL.revokeObjectURL(proxyBlobUrl); };
+  }, [proxyBlobUrl]);
 
   return (
     <video
