@@ -571,6 +571,15 @@ const TVTab = () => {
                 Réessayer
               </Button>
             </div>
+          ) : activeChannel?.url?.startsWith('iframe:') ? (
+            <div className="relative w-full aspect-video overflow-hidden bg-black rounded-xl">
+              <iframe 
+                src={activeChannel.url.replace('iframe:', '')} 
+                className="absolute top-[-25%] md:top-[-28%] left-0 w-full h-[150%]" 
+                style={{ border: 'none' }}
+                allowFullScreen
+              />
+            </div>
           ) : activeChannel?.url ? (
             <StreamPlayer url={activeChannel.url} useProxy={activeChannel.useProxy} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
           ) : (
