@@ -99,16 +99,17 @@ const loadCustomLinks = (): string[] => {
   return Array(10).fill("");
 };
 
-// Stream Player - handles HLS (.m3u8) and YouTube
+// Stream Player - handles HLS (.m3u8), YouTube, and iframe: URLs
 const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onError: () => void; onReady?: () => void; useProxy?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isYouTube = isYouTubeUrl(url);
+  const isIframe = isIframeUrl(url);
 
   useEffect(() => {
-    if (isYouTube) return;
+    if (isYouTube || isIframe) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
@@ -131,7 +132,6 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
         xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
           xhr.withCredentials = false;
           if (useProxy) {
-            // Only proxy manifest files (.m3u8), let segments (.ts) load directly from CDN
             const isManifest = xhrUrl.includes('.m3u8') || xhrUrl.includes('m3u8') || !xhrUrl.includes('.ts');
             if (isManifest) {
               const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
@@ -175,11 +175,24 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url, isYouTube]);
+  }, [url, isYouTube, isIframe]);
+
+  // iframe: prefix → render raw iframe
+  if (isIframe) {
+    const iframeSrc = url.replace(/^iframe:/, "");
+    return (
+      <iframe
+        src={iframeSrc}
+        className="w-full h-full absolute inset-0 border-0"
+        allow="autoplay; encrypted-media; fullscreen"
+        allowFullScreen
+        onLoad={() => onReady?.()}
+      />
+    );
+  }
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
-    // YouTube embeds are generally reliable — mark as online after load
     return (
       <iframe
         src={embedUrl || ""}
