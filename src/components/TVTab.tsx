@@ -329,6 +329,8 @@ const TVTab = () => {
   const [xtreamConfig, setXtreamConfig] = useState<XtreamConfig | null>(loadXtreamConfig);
   const [xtreamChannels, setXtreamChannels] = useState<Channel[]>([]);
   const [xtreamLoading, setXtreamLoading] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [collapsedCats, setCollapsedCats] = useState<Set<string>>(new Set());
 
   const markChannelStatus = useCallback((channelId: string, status: "online" | "offline") => {
     setChannelStatus((prev) => ({ ...prev, [channelId]: status }));
