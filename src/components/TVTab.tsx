@@ -401,7 +401,7 @@ const TVTab = () => {
   const isActive = (ch: Channel) => activeChannel?.name === ch.name && activeChannel?.url === ch.url;
   const isDead = (ch: Channel) => deadChannels.has(ch.url);
   const activeChannelPlaybackUrl = activeChannel
-    ? (Hls.isSupported() ? buildChannelPlaybackUrl(activeChannel) : activeChannel.url)
+    ? (proxyAvailable && Hls.isSupported() ? buildChannelPlaybackUrl(activeChannel) : activeChannel.url)
     : null;
 
   return (
