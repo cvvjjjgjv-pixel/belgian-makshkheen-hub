@@ -48,15 +48,25 @@ serve(async (req) => {
       });
     }
 
+    // Determine appropriate headers based on URL
+    const urlObj = new URL(url);
+    const headers: Record<string, string> = {
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+      'Accept': '*/*',
+      'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
+    };
+
+    if (urlObj.hostname.includes('alkassdigital.net')) {
+      headers['Referer'] = 'https://www.alkass.net/';
+      headers['Origin'] = 'https://www.alkass.net';
+    } else if (urlObj.hostname.includes('elahmad.com')) {
+      headers['Referer'] = 'http://www.elahmad.com/tv/livetv/Arabian.htm';
+      headers['Accept'] = 'application/vnd.apple.mpegurl, */*';
+    }
+
     // Fetch the upstream URL
     const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-        'Accept': '*/*',
-        'Referer': 'https://www.alkass.net/',
-        'Origin': 'https://www.alkass.net',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-      },
+      headers,
       redirect: 'follow',
     });
 
