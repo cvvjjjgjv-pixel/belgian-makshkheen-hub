@@ -1,12 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Gamepad2, Trophy, RotateCcw, CheckCircle, XCircle, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 import GameLobby from "@/components/games/GameLobby";
 import ChkobbaGame from "@/components/games/ChkobbaGame";
 import RamiGame from "@/components/games/RamiGame";
+import GameLeaderboard from "@/components/games/GameLeaderboard";
 
-type GameType = "menu" | "quiz" | "guess" | "emoji" | "chkobba-lobby" | "chkobba-game" | "rami-lobby" | "rami-game";
+type GameType = "menu" | "leaderboard" | "quiz" | "guess" | "emoji" | "chkobba-lobby" | "chkobba-game" | "rami-lobby" | "rami-game";
 
 const QUIZ_QUESTIONS = [
   { question: "En quelle année l'EST a remporté sa première Ligue des Champions ?", options: ["1991", "1994", "2011", "2018"], answer: 1 },
@@ -33,6 +36,46 @@ const GUESS_PLAYERS = [
   { clues: ["Milieu de terrain", "International tunisien", "A joué en France", "Buteur en Coupe du Monde"], answer: "Khazri" },
 ];
 
+// Helper to save score to DB
+const saveGameScore = async (gameType: string, points: number, won: boolean) => {
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return;
+
+  // Try to get existing score
+  const { data: existing } = await supabase
+    .from("game_scores")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("game_type", gameType)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase
+      .from("game_scores")
+      .update({
+        wins: existing.wins + (won ? 1 : 0),
+        losses: existing.losses + (won ? 0 : 1),
+        total_points: existing.total_points + points,
+        games_played: existing.games_played + 1,
+        best_score: Math.max(existing.best_score, points),
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", existing.id);
+  } else {
+    await supabase
+      .from("game_scores")
+      .insert({
+        user_id: user.id,
+        game_type: gameType,
+        wins: won ? 1 : 0,
+        losses: won ? 0 : 1,
+        total_points: points,
+        games_played: 1,
+        best_score: points,
+      });
+  }
+};
+
 const GamesTab = () => {
   const [currentGame, setCurrentGame] = useState<GameType>("menu");
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
@@ -53,6 +96,7 @@ const GamesTab = () => {
           transition={{ duration: 0.2 }}
         >
           {currentGame === "menu" && <GameMenu onSelect={setCurrentGame} />}
+          {currentGame === "leaderboard" && <GameLeaderboard onBack={() => setCurrentGame("menu")} />}
           {currentGame === "quiz" && <QuizGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "guess" && <GuessPlayerGame onBack={() => setCurrentGame("menu")} />}
           {currentGame === "emoji" && <EmojiGame onBack={() => setCurrentGame("menu")} />}
@@ -85,6 +129,20 @@ const GameMenu = ({ onSelect }: { onSelect: (game: GameType) => void }) => {
 
   return (
     <div className="space-y-3">
+      {/* Leaderboard button */}
+      <motion.button
+        whileTap={{ scale: 0.97 }}
+        onClick={() => onSelect("leaderboard")}
+        className="w-full p-4 rounded-2xl bg-gradient-to-br from-accent/30 via-accent/15 to-accent/5 border border-accent/30 flex items-center gap-4 text-left transition-colors hover:border-accent/60"
+      >
+        <span className="text-4xl">🏆</span>
+        <div className="flex-1">
+          <h3 className="font-bold text-foreground">Classement</h3>
+          <p className="text-sm text-muted-foreground">Voir le leaderboard et tes stats</p>
+        </div>
+        <Trophy className="w-5 h-5 text-accent" />
+      </motion.button>
+
       {games.map((game) => (
         <motion.button
           key={game.id}
@@ -109,6 +167,7 @@ const QuizGame = ({ onBack }: { onBack: () => void }) => {
   const [score, setScore] = useState(0);
   const [selected, setSelected] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
+  const [scoreSaved, setScoreSaved] = useState(false);
 
   const shuffledQuestions = useState(() => [...QUIZ_QUESTIONS].sort(() => Math.random() - 0.5).slice(0, 5))[0];
   const current = shuffledQuestions[questionIndex];
@@ -127,11 +186,24 @@ const QuizGame = ({ onBack }: { onBack: () => void }) => {
     }, 1200);
   };
 
+  // Save score when finished
+  useEffect(() => {
+    if (finished && !scoreSaved) {
+      const finalScore = score + (selected !== null && selected === current?.answer ? 1 : 0);
+      const points = finalScore * 20;
+      const won = finalScore >= 3;
+      saveGameScore("quiz", points, won);
+      setScoreSaved(true);
+    }
+  }, [finished]);
+
   if (finished) {
+    const points = score * 20;
     return (
       <div className="text-center space-y-4 py-8">
         <Trophy className="w-16 h-16 text-accent mx-auto" />
         <h3 className="text-2xl font-black text-foreground">{score}/{shuffledQuestions.length}</h3>
+        <p className="text-sm text-accent font-bold">+{points} points</p>
         <p className="text-muted-foreground">
           {score === shuffledQuestions.length ? "Parfait ! Tu es un vrai expert ! 🏆" : score >= 3 ? "Bien joué ! 👏" : "Continue à t'entraîner ! 💪"}
         </p>
@@ -185,16 +257,20 @@ const GuessPlayerGame = ({ onBack }: { onBack: () => void }) => {
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [score, setScore] = useState(0);
+  const [roundsPlayed, setRoundsPlayed] = useState(0);
+  const [totalRounds] = useState(GUESS_PLAYERS.length);
 
   const current = GUESS_PLAYERS[playerIndex];
 
   const handleGuess = () => {
+    const pts = Math.max(1, 5 - revealedClues);
     if (guess.trim().toLowerCase().includes(current.answer.toLowerCase())) {
       setResult("correct");
-      setScore((s) => s + Math.max(1, 5 - revealedClues));
+      setScore((s) => s + pts * 10);
     } else {
       setResult("wrong");
     }
+    setRoundsPlayed((r) => r + 1);
   };
 
   const nextPlayer = () => {
@@ -204,10 +280,10 @@ const GuessPlayerGame = ({ onBack }: { onBack: () => void }) => {
       setGuess("");
       setResult(null);
     } else {
-      setPlayerIndex(0);
-      setRevealedClues(1);
-      setGuess("");
-      setResult(null);
+      // Game finished, save score
+      saveGameScore("guess", score, score > 0);
+      toast.success(`Partie terminée ! +${score} points`);
+      onBack();
     }
   };
 
@@ -215,6 +291,7 @@ const GuessPlayerGame = ({ onBack }: { onBack: () => void }) => {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack}>← Retour</Button>
+        <span className="text-xs text-muted-foreground">{playerIndex + 1}/{totalRounds}</span>
         <span className="text-sm font-bold text-accent">Score: {score}</span>
       </div>
       <div className="bg-card border border-border rounded-2xl p-5 space-y-3">
@@ -249,7 +326,9 @@ const GuessPlayerGame = ({ onBack }: { onBack: () => void }) => {
             ) : (
               <p className="text-destructive font-bold">❌ C'était {current.answer}</p>
             )}
-            <Button onClick={nextPlayer} size="sm">Joueur suivant →</Button>
+            <Button onClick={nextPlayer} size="sm">
+              {playerIndex < GUESS_PLAYERS.length - 1 ? "Joueur suivant →" : "Terminer 🏆"}
+            </Button>
           </div>
         )}
       </div>
@@ -263,13 +342,14 @@ const EmojiGame = ({ onBack }: { onBack: () => void }) => {
   const [guess, setGuess] = useState("");
   const [result, setResult] = useState<"correct" | "wrong" | null>(null);
   const [score, setScore] = useState(0);
+  const [totalRounds] = useState(EMOJI_PLAYERS.length);
 
   const current = EMOJI_PLAYERS[playerIndex];
 
   const handleGuess = () => {
     if (guess.trim().toLowerCase().includes(current.answer.toLowerCase())) {
       setResult("correct");
-      setScore((s) => s + Math.max(1, 4 - hintIndex));
+      setScore((s) => s + Math.max(1, 4 - hintIndex) * 10);
     } else {
       setResult("wrong");
     }
@@ -278,18 +358,21 @@ const EmojiGame = ({ onBack }: { onBack: () => void }) => {
   const nextPlayer = () => {
     if (playerIndex < EMOJI_PLAYERS.length - 1) {
       setPlayerIndex((i) => i + 1);
+      setHintIndex(0);
+      setGuess("");
+      setResult(null);
     } else {
-      setPlayerIndex(0);
+      saveGameScore("emoji", score, score > 0);
+      toast.success(`Partie terminée ! +${score} points`);
+      onBack();
     }
-    setHintIndex(0);
-    setGuess("");
-    setResult(null);
   };
 
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onBack}>← Retour</Button>
+        <span className="text-xs text-muted-foreground">{playerIndex + 1}/{totalRounds}</span>
         <span className="text-sm font-bold text-accent">Score: {score}</span>
       </div>
       <div className="bg-card border border-border rounded-2xl p-5 space-y-4 text-center">
@@ -325,7 +408,9 @@ const EmojiGame = ({ onBack }: { onBack: () => void }) => {
             ) : (
               <p className="text-destructive font-bold">❌ C'était {current.answer}</p>
             )}
-            <Button onClick={nextPlayer} size="sm">Suivant →</Button>
+            <Button onClick={nextPlayer} size="sm">
+              {playerIndex < EMOJI_PLAYERS.length - 1 ? "Suivant →" : "Terminer 🏆"}
+            </Button>
           </div>
         )}
       </div>
