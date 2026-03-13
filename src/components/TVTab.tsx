@@ -611,60 +611,126 @@ const TVTab = () => {
         )}
       </div>
 
+      {/* Category filter tabs */}
+      {!loading && categories.length > 1 && (
+        <div className="mx-3 mt-3 flex gap-1.5 overflow-x-auto pb-1" style={{ scrollbarWidth: 'none' }}>
+          <button
+            onClick={() => setSelectedCategory(null)}
+            className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
+              selectedCategory === null
+                ? "bg-accent text-accent-foreground border-accent"
+                : "bg-card text-muted-foreground border-border hover:border-accent/40"
+            }`}
+          >
+            Tout ({filteredChannels.length})
+          </button>
+          {categories.map((cat) => {
+            const count = filteredChannels.filter((c) => c.category === cat).length;
+            return (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                className={`shrink-0 px-3 py-1.5 rounded-full text-[10px] font-bold uppercase transition-all border ${
+                  selectedCategory === cat
+                    ? "bg-accent text-accent-foreground border-accent"
+                    : "bg-card text-muted-foreground border-border hover:border-accent/40"
+                }`}
+              >
+                {cat} ({count})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
       {/* Channel Grid by category */}
-      <div className="px-3 py-4 space-y-4">
+      <div className="px-3 py-4 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center py-8">
             <Loader2 className="w-8 h-8 text-accent animate-spin" />
           </div>
         ) : (
-          categories.map((cat) => {
-            const catChannels = filteredChannels.filter((c) => c.category === cat);
-            return (
-              <div key={cat}>
-                <p className="text-xs font-bold text-muted-foreground mb-2 px-1 uppercase tracking-wide">
-                  {cat} ({catChannels.length})
-                </p>
-                <div className="space-y-1.5">
-                  {catChannels.map((ch) => (
-                    <button
-                      key={ch.id}
-                      onClick={() => handleChannelClick(ch)}
-                      className={`flex items-center w-full p-3 rounded-xl transition-all border ${
-                        activeChannel?.id === ch.id
-                          ? "bg-accent/10 border-accent shadow-md shadow-accent/10"
-                          : "bg-card border-border hover:border-accent/40"
-                      }`}
-                    >
-                      <div className="w-10 h-10 bg-background rounded-lg flex items-center justify-center text-lg mr-3 border border-border shrink-0">
-                        {ch.icon}
-                      </div>
-                      <div className="flex-1 text-left min-w-0">
-                        <div className="flex items-center gap-1.5">
-                          <h4 className={`font-bold text-sm truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
-                            {ch.name}
-                          </h4>
-                          {channelStatus[ch.id] === "online" && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-green-500/15 text-green-500 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-green-500/30">
-                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />EN LIGNE
-                            </span>
-                          )}
-                          {channelStatus[ch.id] === "offline" && (
-                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-destructive/15 text-destructive text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-destructive/30">
-                              <span className="w-1.5 h-1.5 bg-destructive rounded-full" />HORS LIGNE
-                            </span>
-                          )}
+          categories
+            .filter((cat) => !selectedCategory || cat === selectedCategory)
+            .map((cat) => {
+              const catChannels = filteredChannels.filter((c) => c.category === cat);
+              const isCollapsed = collapsedCats.has(cat);
+              const displayChannels = isCollapsed ? [] : (selectedCategory ? catChannels : catChannels.slice(0, 5));
+              const hasMore = !selectedCategory && !isCollapsed && catChannels.length > 5;
+
+              return (
+                <div key={cat}>
+                  <button
+                    onClick={() => {
+                      setCollapsedCats((prev) => {
+                        const next = new Set(prev);
+                        next.has(cat) ? next.delete(cat) : next.add(cat);
+                        return next;
+                      });
+                    }}
+                    className="flex items-center justify-between w-full px-1 py-1.5"
+                  >
+                    <p className="text-xs font-bold text-muted-foreground uppercase tracking-wide">
+                      {cat} ({catChannels.length})
+                    </p>
+                    <ChevronDown className={`w-4 h-4 text-muted-foreground transition-transform ${isCollapsed ? "" : "rotate-180"}`} />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {!isCollapsed && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="space-y-1.5">
+                          {displayChannels.map((ch) => (
+                            <button
+                              key={ch.id}
+                              onClick={() => handleChannelClick(ch)}
+                              className={`flex items-center w-full p-2.5 rounded-xl transition-all border ${
+                                activeChannel?.id === ch.id
+                                  ? "bg-accent/10 border-accent shadow-md shadow-accent/10"
+                                  : "bg-card border-border hover:border-accent/40"
+                              }`}
+                            >
+                              <div className="w-8 h-8 bg-background rounded-lg flex items-center justify-center text-base mr-2.5 border border-border shrink-0">
+                                {ch.icon}
+                              </div>
+                              <div className="flex-1 text-left min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <h4 className={`font-bold text-xs truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
+                                    {ch.name}
+                                  </h4>
+                                  {channelStatus[ch.id] === "online" && (
+                                    <span className="shrink-0 inline-flex items-center gap-0.5 bg-green-500/15 text-green-500 text-[7px] font-black uppercase px-1 py-0.5 rounded-full border border-green-500/30">
+                                      <span className="w-1 h-1 bg-green-500 rounded-full" />EN LIGNE
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                              {ch.quality && <span className="text-[8px] text-accent font-bold mr-1.5">{ch.quality}</span>}
+                              <Play className={`w-3.5 h-3.5 shrink-0 ${activeChannel?.id === ch.id ? "text-accent" : "text-muted-foreground"}`} />
+                            </button>
+                          ))}
                         </div>
-                        <p className="text-[10px] text-muted-foreground uppercase">{ch.category}</p>
-                      </div>
-                      {ch.quality && <span className="text-[9px] text-accent font-bold mr-2">{ch.quality}</span>}
-                      <Play className={`w-4 h-4 shrink-0 ${activeChannel?.id === ch.id ? "text-accent" : "text-muted-foreground"}`} />
-                    </button>
-                  ))}
+
+                        {hasMore && (
+                          <button
+                            onClick={() => setSelectedCategory(cat)}
+                            className="w-full mt-1.5 py-2 text-[10px] font-bold text-accent hover:text-accent/80 uppercase tracking-wide"
+                          >
+                            Voir les {catChannels.length - 5} autres →
+                          </button>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
-              </div>
-            );
-          })
+              );
+            })
         )}
       </div>
 
