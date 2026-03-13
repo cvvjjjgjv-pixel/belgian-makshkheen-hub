@@ -119,6 +119,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
       hls.attachMedia(video);
 
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        loadedRef.current = true;
         setLoading(false);
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
         if (playing) {
