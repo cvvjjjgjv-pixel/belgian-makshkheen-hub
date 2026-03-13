@@ -20,6 +20,7 @@ interface Channel {
   url: string;
   category: string;
   quality?: string;
+  useProxy?: boolean;
 }
 
 // --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES ---
