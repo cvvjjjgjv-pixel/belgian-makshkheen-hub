@@ -20,6 +20,7 @@ interface Channel {
   url: string;
   category: string;
   quality?: string;
+  useProxy?: boolean;
 }
 
 // --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES ---
@@ -56,11 +57,11 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass1", name: "Al Kass One HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093498/ALKASS-ONE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
-  { id: "alkass2", name: "Al Kass Two HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093499/ALKASS-TWO-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
-  { id: "alkass3", name: "Al Kass Three HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093500/ALKASS-THREE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
-  { id: "alkass4", name: "Al Kass Four HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093501/ALKASS-FOUR-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
-  { id: "alkass5", name: "Al Kass Five HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093502/ALKASS-FIVE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass1", name: "Al Kass One HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093498/ALKASS-ONE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass2", name: "Al Kass Two HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093499/ALKASS-TWO-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass3", name: "Al Kass Three HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093500/ALKASS-THREE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass4", name: "Al Kass Four HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093501/ALKASS-FOUR-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass5", name: "Al Kass Five HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093502/ALKASS-FIVE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
@@ -101,7 +102,7 @@ const loadCustomLinks = (): string[] => {
 };
 
 // Stream Player - handles HLS (.m3u8) and YouTube
-const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => void; onReady?: () => void }) => {
+const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onError: () => void; onReady?: () => void; useProxy?: boolean }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,14 +110,14 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
   const isYouTube = isYouTubeUrl(url);
 
   useEffect(() => {
-    if (isYouTube) return; // React Player handles YouTube
+    if (isYouTube) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
     if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
     if (timeoutRef.current) { clearTimeout(timeoutRef.current); }
 
-    timeoutRef.current = setTimeout(() => onError(), 10000);
+    timeoutRef.current = setTimeout(() => onError(), 15000);
 
     const playVideo = () => {
       video.play().catch(() => {
@@ -129,7 +130,19 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        xhrSetup: (xhr) => { xhr.withCredentials = false; },
+        xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
+          xhr.withCredentials = false;
+          if (useProxy) {
+            // Intercept: rewrite to POST through proxy
+            const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+            xhr.open('POST', proxyUrl, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            const origSend = xhr.send.bind(xhr);
+            xhr.send = () => {
+              origSend(JSON.stringify({ url: xhrUrl }));
+            };
+          }
+        },
       });
       hls.loadSource(url);
       hls.attachMedia(video);
@@ -561,7 +574,7 @@ const TVTab = () => {
               </Button>
             </div>
           ) : activeChannel?.url ? (
-            <StreamPlayer url={activeChannel.url} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
+            <StreamPlayer url={activeChannel.url} useProxy={activeChannel.useProxy} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-background aspect-video">
               {loading ? (
