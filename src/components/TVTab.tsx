@@ -444,7 +444,10 @@ const TVTab = () => {
               url={buildProxyUrl(activeChannel)}
               playing={playing}
               authToken={authToken}
-              onError={() => markDead(activeChannel.url)}
+              onError={() => {
+                markDead(activeChannel.url);
+                skipToNext();
+              }}
               onSuccess={() => markAlive(activeChannel.url)}
             />
           ) : (
