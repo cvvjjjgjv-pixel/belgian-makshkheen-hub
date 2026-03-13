@@ -4,6 +4,7 @@ import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, SkipForward, AlertTri
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 
 interface Channel {
@@ -11,6 +12,8 @@ interface Channel {
   icon: string;
   url: string;
   quality?: string;
+  referrer?: string;
+  userAgent?: string;
 }
 
 interface StreamData {
@@ -24,6 +27,8 @@ interface StreamData {
 }
 
 const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
+const PROXY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv-stream-proxy`;
+const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const FALLBACK_CHANNELS: Channel[] = [
   { name: "Al Jazeera Arabic", icon: "📡", url: "https://live-hls-web-aj.getaj.net/AJAR/index.m3u8" },
@@ -59,21 +64,39 @@ const loadDeadChannels = (): Set<string> => {
     const saved = localStorage.getItem(DEAD_CHANNELS_KEY);
     if (saved) {
       const { urls, timestamp } = JSON.parse(saved);
-      // Reset dead list every hour
       if (Date.now() - timestamp < 60 * 60 * 1000) return new Set(urls);
     }
   } catch {}
   return new Set();
 };
 
-// HLS Video Player component
-const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing: boolean; onError: () => void; onSuccess: () => void }) => {
+const buildProxyUrl = (channel: Channel) => {
+  const proxy = new URL(PROXY_FUNCTION_URL);
+  proxy.searchParams.set("url", channel.url);
+  if (channel.referrer) proxy.searchParams.set("ref", channel.referrer);
+  if (channel.userAgent) proxy.searchParams.set("ua", channel.userAgent);
+  return proxy.toString();
+};
+
+const HLSPlayer = ({
+  url,
+  playing,
+  onError,
+  onSuccess,
+  authToken,
+}: {
+  url: string;
+  playing: boolean;
+  onError: () => void;
+  onSuccess: () => void;
+  authToken: string;
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState(false);
   const [loading, setLoading] = useState(true);
   const errorCountRef = useRef(0);
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const loadedRef = useRef(false);
 
   useEffect(() => {
@@ -91,7 +114,6 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
     }
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
 
-    // Timeout: if not playing within 15s, mark as dead
     timeoutRef.current = setTimeout(() => {
       if (!loadedRef.current) {
         setError(true);
@@ -104,14 +126,17 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-        fragLoadingTimeOut: 8000,
-        manifestLoadingTimeOut: 8000,
-        levelLoadingTimeOut: 8000,
+        fragLoadingTimeOut: 12000,
+        manifestLoadingTimeOut: 12000,
+        levelLoadingTimeOut: 12000,
         fragLoadingMaxRetry: 1,
         manifestLoadingMaxRetry: 1,
         levelLoadingMaxRetry: 1,
         xhrSetup: (xhr) => {
           xhr.withCredentials = false;
+          if (PUBLISHABLE_KEY) xhr.setRequestHeader("apikey", PUBLISHABLE_KEY);
+          if (authToken) xhr.setRequestHeader("authorization", `Bearer ${authToken}`);
+          xhr.setRequestHeader("x-client-info", "tv-player");
         },
       });
 
@@ -132,43 +157,56 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
       });
 
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          errorCountRef.current++;
-          if (errorCountRef.current >= 2 || data.details === "manifestLoadError" || data.details === "manifestLoadTimeOut") {
-            setError(true);
-            setLoading(false);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            hls.destroy();
-            onError();
-          } else if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            hls.startLoad();
-          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hls.recoverMediaError();
-          } else {
-            setError(true);
-            setLoading(false);
-            if (timeoutRef.current) clearTimeout(timeoutRef.current);
-            hls.destroy();
-            onError();
-          }
+        if (!data.fatal) return;
+
+        errorCountRef.current++;
+        if (
+          errorCountRef.current >= 2 ||
+          data.details === "manifestLoadError" ||
+          data.details === "manifestLoadTimeOut" ||
+          data.details === "levelLoadError"
+        ) {
+          setError(true);
+          setLoading(false);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          hls.destroy();
+          onError();
+        } else if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+          hls.startLoad();
+        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hls.recoverMediaError();
+        } else {
+          setError(true);
+          setLoading(false);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          hls.destroy();
+          onError();
         }
       });
 
       hlsRef.current = hls;
     } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
       video.src = url;
-      video.addEventListener("loadeddata", () => {
-        loadedRef.current = true;
-        setLoading(false);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        onSuccess();
-      }, { once: true });
-      video.addEventListener("error", () => {
-        setError(true);
-        setLoading(false);
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        onError();
-      }, { once: true });
+      video.addEventListener(
+        "loadeddata",
+        () => {
+          loadedRef.current = true;
+          setLoading(false);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          onSuccess();
+        },
+        { once: true }
+      );
+      video.addEventListener(
+        "error",
+        () => {
+          setError(true);
+          setLoading(false);
+          if (timeoutRef.current) clearTimeout(timeoutRef.current);
+          onError();
+        },
+        { once: true }
+      );
       if (playing) {
         video.play().catch(() => {
           video.muted = true;
@@ -188,7 +226,7 @@ const HLSPlayer = ({ url, playing, onError, onSuccess }: { url: string; playing:
       }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url]);
+  }, [url, playing, onError, onSuccess, authToken]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -238,6 +276,21 @@ const TVTab = () => {
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deadChannels, setDeadChannels] = useState<Set<string>>(loadDeadChannels);
+  const [authToken, setAuthToken] = useState("");
+
+  useEffect(() => {
+    const loadSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      setAuthToken(data.session?.access_token || "");
+    };
+    loadSession();
+
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      setAuthToken(session?.access_token || "");
+    });
+
+    return () => listener.subscription.unsubscribe();
+  }, []);
 
   const markDead = useCallback((url: string) => {
     setDeadChannels((prev) => {
@@ -266,7 +319,6 @@ const TVTab = () => {
         const { data, timestamp } = JSON.parse(cached);
         if (Date.now() - timestamp < STREAMS_CACHE_TTL) {
           setApiChannels(data);
-          if (!activeChannel && data.length > 0) setActiveChannel(data[0]);
           setLoading(false);
           return;
         }
@@ -285,13 +337,15 @@ const TVTab = () => {
 
       const seen = new Map<string, Channel>();
       for (const s of sportStreams) {
-        const key = s.title.trim();
+        const key = `${s.title.trim()}-${s.url}`;
         if (!seen.has(key)) {
           seen.set(key, {
             name: s.title,
             icon: "⚽",
             url: s.url,
             quality: s.quality || undefined,
+            referrer: s.referrer || undefined,
+            userAgent: s.user_agent || undefined,
           });
         }
       }
@@ -299,7 +353,6 @@ const TVTab = () => {
       const channels = Array.from(seen.values()).slice(0, 50);
       localStorage.setItem(STREAMS_CACHE_KEY, JSON.stringify({ data: channels, timestamp: Date.now() }));
       setApiChannels(channels);
-      if (!activeChannel && channels.length > 0) setActiveChannel(channels[0]);
       toast.success(`${channels.length} chaînes sport trouvées`);
     } catch (err) {
       console.error("Error fetching streams:", err);
@@ -310,7 +363,9 @@ const TVTab = () => {
     }
   }, []);
 
-  useEffect(() => { fetchStreams(); }, [fetchStreams]);
+  useEffect(() => {
+    fetchStreams();
+  }, [fetchStreams]);
 
   useEffect(() => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(customLinks));
@@ -327,7 +382,10 @@ const TVTab = () => {
   }, [allChannels, activeChannel]);
 
   const handleChannelClick = (ch: Channel) => {
-    if (!ch.url) { toast.error("Aucun lien configuré"); return; }
+    if (!ch.url) {
+      toast.error("Aucun lien configuré");
+      return;
+    }
     setActiveChannel(ch);
     setPlaying(true);
   };
@@ -376,13 +434,13 @@ const TVTab = () => {
         </div>
       </div>
 
-      {/* Video Player */}
       <div className="mx-3 rounded-2xl overflow-hidden border-2 border-accent/30 bg-black">
         <div className="aspect-video relative">
           {activeChannel?.url ? (
             <HLSPlayer
-              url={activeChannel.url}
+              url={buildProxyUrl(activeChannel)}
               playing={playing}
+              authToken={authToken}
               onError={() => markDead(activeChannel.url)}
               onSuccess={() => markAlive(activeChannel.url)}
             />
@@ -429,7 +487,6 @@ const TVTab = () => {
         </div>
       )}
 
-      {/* Channel Grid */}
       <div className="px-3 py-4">
         <p className="text-xs font-semibold text-muted-foreground mb-3 px-1">📺 CHAÎNES ({allChannels.length})</p>
         {loading ? (
@@ -470,7 +527,6 @@ const TVTab = () => {
         )}
       </div>
 
-      {/* Settings */}
       <AnimatePresence>
         {showSettings && (
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mx-3 mb-4 rounded-2xl border-2 border-accent/30 bg-card p-4">
