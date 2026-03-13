@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Hls from "hls.js";
+import ReactPlayer from "react-player";
 import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { supabase } from "@/integrations/supabase/client";
-
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 
 interface Channel {
   id: string;
