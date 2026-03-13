@@ -47,7 +47,20 @@ const CHANNELS_DATA: Channel[] = [
   { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJI", category: "Infos", icon: "🇹🇷", quality: "YT" },
   { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=fBq7fv6BfxQ", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
-  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "https://www.youtube.com/watch?v=zCB59AxYwIo", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra1", name: "beIN SPORTS Xtra 1", url: "https://www.youtube.com/watch?v=zCB59AxYwIo", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra2", name: "beIN SPORTS Xtra 2", url: "https://www.youtube.com/watch?v=JLtS2aFI8IU", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra3", name: "beIN SPORTS Xtra 3", url: "https://www.youtube.com/watch?v=sDt1GXEH6WM", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra4", name: "beIN SPORTS Xtra 4", url: "https://www.youtube.com/watch?v=K8YIf-r-pJE", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra5", name: "beIN SPORTS Xtra 5", url: "https://www.youtube.com/watch?v=5rV0K0c3VXk", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra6", name: "beIN SPORTS Xtra 6", url: "https://www.youtube.com/watch?v=Gq7skAERO9A", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
+  { id: "alkass1", name: "Al Kass One HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093498/ALKASS-ONE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass2", name: "Al Kass Two HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093499/ALKASS-TWO-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass3", name: "Al Kass Three HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093500/ALKASS-THREE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass4", name: "Al Kass Four HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093501/ALKASS-FOUR-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
+  { id: "alkass5", name: "Al Kass Five HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093502/ALKASS-FIVE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
