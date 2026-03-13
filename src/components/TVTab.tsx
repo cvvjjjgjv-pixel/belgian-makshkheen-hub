@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Hls from "hls.js";
-import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle, ChevronUp, ChevronDown, Volume2, VolumeX, Power, SkipForward, SkipBack, Maximize, Minimize } from "lucide-react";
+import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle, ChevronUp, ChevronDown, Volume2, VolumeX, Power, SkipForward, SkipBack, Maximize, Minimize, Radio, Trash2, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,9 +53,25 @@ const CHANNELS_DATA: Channel[] = [
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
+const XTREAM_STORAGE_KEY = "tv-xtream-config";
 const STREAMS_CACHE_KEY = "tv-iptv-streams-cache";
+const XTREAM_CACHE_KEY = "tv-xtream-channels-cache";
 const STREAMS_CACHE_TTL = 30 * 60 * 1000;
 const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface XtreamConfig {
+  server: string;
+  username: string;
+  password: string;
+}
+
+const loadXtreamConfig = (): XtreamConfig | null => {
+  try {
+    const saved = localStorage.getItem(XTREAM_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch { return null; }
+};
 
 const SPORT_KEYWORDS = [
   "bein", "sport", "eurosport", "sky sport", "espn", "fox sport",
@@ -270,6 +286,36 @@ const RemoteControl = ({
     </motion.div>
   );
 };
+// Xtream Login Form
+const XtreamLoginForm = ({ onConnect, loading }: { onConnect: (config: XtreamConfig) => void; loading: boolean }) => {
+  const [server, setServer] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!server || !username || !password) { toast.error("Remplissez tous les champs"); return; }
+    let normalizedServer = server.trim();
+    if (!normalizedServer.startsWith("http")) normalizedServer = `http://${normalizedServer}`;
+    onConnect({ server: normalizedServer, username: username.trim(), password: password.trim() });
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-2">
+      <Input value={server} onChange={(e) => setServer(e.target.value)} placeholder="http://serveur:port" className="text-xs h-9 bg-secondary border-border font-mono" />
+      <div className="flex gap-2">
+        <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="Login" className="text-xs h-9 bg-secondary border-border" />
+        <Input type="password" value={password} onChange={(e) => setPassword(e.target.value)} placeholder="Mot de passe" className="text-xs h-9 bg-secondary border-border" />
+      </div>
+      <Button type="submit" size="sm" className="w-full text-xs bg-accent text-accent-foreground hover:bg-accent/80 font-bold" disabled={loading}>
+        {loading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <LogIn className="w-3 h-3 mr-1" />}
+        Connecter
+      </Button>
+      <p className="text-[9px] text-muted-foreground text-center">Compatible TiviMate, Xtream UI, et serveurs IPTV standards</p>
+    </form>
+  );
+};
+
 const TVTab = () => {
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [showSettings, setShowSettings] = useState(false);
@@ -280,9 +326,98 @@ const TVTab = () => {
   const [loading, setLoading] = useState(true);
   const [channelStatus, setChannelStatus] = useState<Record<string, "online" | "offline">>({});
 
+  const [xtreamConfig, setXtreamConfig] = useState<XtreamConfig | null>(loadXtreamConfig);
+  const [xtreamChannels, setXtreamChannels] = useState<Channel[]>([]);
+  const [xtreamLoading, setXtreamLoading] = useState(false);
+
   const markChannelStatus = useCallback((channelId: string, status: "online" | "offline") => {
     setChannelStatus((prev) => ({ ...prev, [channelId]: status }));
   }, []);
+
+  // Xtream Codes fetch
+  const fetchXtreamChannels = useCallback(async (config: XtreamConfig) => {
+    setXtreamLoading(true);
+    try {
+      // Check cache
+      const cached = localStorage.getItem(XTREAM_CACHE_KEY);
+      if (cached) {
+        const { data, timestamp, server } = JSON.parse(cached);
+        if (Date.now() - timestamp < STREAMS_CACHE_TTL && server === config.server) {
+          setXtreamChannels(data);
+          setXtreamLoading(false);
+          return;
+        }
+      }
+
+      // 1. Get categories
+      const catRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...config, action: 'get_live_categories' }),
+      });
+      const categories: any[] = catRes.ok ? await catRes.json() : [];
+      const catMap = new Map<string, string>();
+      if (Array.isArray(categories)) {
+        categories.forEach((c: any) => catMap.set(String(c.category_id), c.category_name || 'Sans catégorie'));
+      }
+
+      // 2. Get all live streams
+      const streamsRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...config, action: 'get_live_streams' }),
+      });
+      const streams: any[] = streamsRes.ok ? await streamsRes.json() : [];
+
+      if (!Array.isArray(streams)) {
+        toast.error("Réponse invalide du serveur Xtream");
+        setXtreamLoading(false);
+        return;
+      }
+
+      // Normalize server URL
+      const baseServer = config.server.replace(/\/$/, '');
+
+      const channels: Channel[] = streams.slice(0, 500).map((s: any, i: number) => ({
+        id: `xtream-${s.stream_id || i}`,
+        name: s.name || `Stream ${s.stream_id}`,
+        icon: "📺",
+        url: `${baseServer}/live/${config.username}/${config.password}/${s.stream_id}.m3u8`,
+        category: catMap.get(String(s.category_id)) || "Xtream",
+        quality: s.stream_type === "live" ? "LIVE" : undefined,
+      }));
+
+      localStorage.setItem(XTREAM_CACHE_KEY, JSON.stringify({ data: channels, timestamp: Date.now(), server: config.server }));
+      setXtreamChannels(channels);
+      toast.success(`${channels.length} chaînes Xtream chargées !`);
+    } catch (err) {
+      console.error("Xtream fetch error:", err);
+      toast.error("Erreur de connexion au serveur Xtream");
+      setXtreamChannels([]);
+    } finally {
+      setXtreamLoading(false);
+    }
+  }, []);
+
+  // Load Xtream on mount if config exists
+  useEffect(() => {
+    if (xtreamConfig) fetchXtreamChannels(xtreamConfig);
+  }, []);
+
+  const saveXtreamConfig = (config: XtreamConfig) => {
+    localStorage.setItem(XTREAM_STORAGE_KEY, JSON.stringify(config));
+    setXtreamConfig(config);
+    localStorage.removeItem(XTREAM_CACHE_KEY);
+    fetchXtreamChannels(config);
+  };
+
+  const clearXtreamConfig = () => {
+    localStorage.removeItem(XTREAM_STORAGE_KEY);
+    localStorage.removeItem(XTREAM_CACHE_KEY);
+    setXtreamConfig(null);
+    setXtreamChannels([]);
+    toast.success("Serveur Xtream déconnecté");
+  };
 
   const fetchStreams = useCallback(async () => {
     setLoading(true);
@@ -342,7 +477,7 @@ const TVTab = () => {
     .map((url, i) => ({ id: `custom-${i}`, name: `Custom ${i + 1}`, icon: "🔗", url: url.trim(), category: "Perso" }))
     .filter((ch) => ch.url.length > 0);
 
-  const allChannels = [...CHANNELS_DATA, ...apiChannels, ...customChannels];
+  const allChannels = [...CHANNELS_DATA, ...xtreamChannels, ...apiChannels, ...customChannels];
 
   // Set first channel on load
   useEffect(() => {
@@ -458,13 +593,21 @@ const TVTab = () => {
         />
       </div>
 
-      {/* API info */}
-      {!loading && apiChannels.length > 0 && (
-        <div className="mx-3 mt-2 flex items-center gap-1.5 px-1">
-          <Globe className="w-3 h-3 text-accent" />
-          <span className="text-[10px] text-muted-foreground">{apiChannels.length} chaînes sport via iptv-org</span>
-        </div>
-      )}
+      {/* Sources info */}
+      <div className="mx-3 mt-2 flex flex-wrap items-center gap-3 px-1">
+        {xtreamChannels.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Radio className="w-3 h-3 text-accent" />
+            <span className="text-[10px] text-muted-foreground">{xtreamChannels.length} chaînes Xtream</span>
+          </div>
+        )}
+        {!loading && apiChannels.length > 0 && (
+          <div className="flex items-center gap-1.5">
+            <Globe className="w-3 h-3 text-accent" />
+            <span className="text-[10px] text-muted-foreground">{apiChannels.length} chaînes sport via iptv-org</span>
+          </div>
+        )}
+      </div>
 
       {/* Channel Grid by category */}
       <div className="px-3 py-4 space-y-4">
@@ -526,23 +669,59 @@ const TVTab = () => {
       {/* Settings */}
       <AnimatePresence>
         {showSettings && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mx-3 mb-4 rounded-2xl border-2 border-accent/30 bg-card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-foreground">⚙️ Liens personnalisés</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mx-3 mb-4 rounded-2xl border-2 border-accent/30 bg-card p-4 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">⚙️ Paramètres TV</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)} className="h-8 w-8"><X className="w-4 h-4" /></Button>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">Collez vos liens .m3u8. Sauvegarde automatique.</p>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {customLinks.map((link, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-muted-foreground w-14 shrink-0">Lien {i + 1}</span>
-                  <Input value={link} onChange={(e) => updateLink(i, e.target.value)} placeholder="https://...m3u8" className="text-xs h-9 bg-secondary border-border" />
+
+            {/* Xtream Codes Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-accent" />
+                <h4 className="text-xs font-bold text-foreground uppercase">Serveur Xtream Codes</h4>
+                {xtreamConfig && <span className="text-[9px] bg-accent/20 text-accent px-2 py-0.5 rounded-full font-bold">Connecté</span>}
+              </div>
+              {xtreamConfig ? (
+                <div className="space-y-2">
+                  <div className="bg-secondary/50 rounded-xl p-3 space-y-1">
+                    <p className="text-[10px] text-muted-foreground">Serveur: <span className="text-foreground font-mono">{xtreamConfig.server}</span></p>
+                    <p className="text-[10px] text-muted-foreground">Login: <span className="text-foreground font-mono">{xtreamConfig.username}</span></p>
+                    <p className="text-[10px] text-muted-foreground">Chaînes: <span className="text-accent font-bold">{xtreamChannels.length}</span></p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { localStorage.removeItem(XTREAM_CACHE_KEY); fetchXtreamChannels(xtreamConfig); }} disabled={xtreamLoading}>
+                      {xtreamLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                      Rafraîchir
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive/30" onClick={clearXtreamConfig}>
+                      <Trash2 className="w-3 h-3 mr-1" /> Déconnecter
+                    </Button>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <XtreamLoginForm onConnect={saveXtreamConfig} loading={xtreamLoading} />
+              )}
             </div>
-            <Button variant="outline" size="sm" className="mt-3 w-full text-xs" onClick={() => { setCustomLinks(Array(10).fill("")); toast.success("Liens réinitialisés"); }}>
-              🗑️ Réinitialiser
-            </Button>
+
+            <div className="border-t border-border" />
+
+            {/* Custom Links Section */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase">🔗 Liens personnalisés</h4>
+              <p className="text-[10px] text-muted-foreground">Collez vos liens .m3u8. Sauvegarde automatique.</p>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {customLinks.map((link, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground w-14 shrink-0">Lien {i + 1}</span>
+                    <Input value={link} onChange={(e) => updateLink(i, e.target.value)} placeholder="https://...m3u8" className="text-xs h-9 bg-secondary border-border" />
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => { setCustomLinks(Array(10).fill("")); toast.success("Liens réinitialisés"); }}>
+                🗑️ Réinitialiser
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
