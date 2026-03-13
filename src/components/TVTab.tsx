@@ -276,7 +276,7 @@ const TVTab = () => {
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
   const [deadChannels, setDeadChannels] = useState<Set<string>>(loadDeadChannels);
-  const [authToken, setAuthToken] = useState("");
+  const [authToken, setAuthToken] = useState(PUBLISHABLE_KEY || "");
 
   useEffect(() => {
     const loadSession = async () => {
