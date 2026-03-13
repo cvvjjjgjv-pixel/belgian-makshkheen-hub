@@ -266,8 +266,7 @@ const RemoteControl = ({
     </motion.div>
   );
 };
-
-
+const TVTab = () => {
   const [activeChannel, setActiveChannel] = useState<Channel | null>(null);
   const [showSettings, setShowSettings] = useState(false);
   const [customLinks, setCustomLinks] = useState<string[]>(loadCustomLinks);
