@@ -136,12 +136,14 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
+    // YouTube embeds are generally reliable — mark as online after load
     return (
       <iframe
         src={embedUrl || ""}
         className="w-full h-full absolute inset-0 border-0"
         allow="autoplay; encrypted-media"
         allowFullScreen
+        onLoad={() => onReady?.()}
       />
     );
   }
