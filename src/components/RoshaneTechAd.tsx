@@ -11,7 +11,7 @@ const RoshaneTechAd = () => {
       className="mx-3 my-3"
     >
       <a
-        href="https://roshanetech.be"
+        href="https://astral-online-builder.lovable.app"
         target="_blank"
         rel="noopener noreferrer"
         className="block relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-[hsl(230,40%,12%)] to-[hsl(280,30%,15%)] shadow-lg hover:shadow-xl transition-shadow"
