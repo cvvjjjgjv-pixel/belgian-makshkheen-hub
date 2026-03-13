@@ -72,7 +72,7 @@ const loadCustomLinks = (): string[] => {
 };
 
 // Stream Player - handles HLS (.m3u8) and YouTube
-const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) => {
+const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => void; onReady?: () => void }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -106,6 +106,7 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        onReady?.();
         playVideo();
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
@@ -120,6 +121,7 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
       video.src = url;
       video.addEventListener("loadedmetadata", () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        onReady?.();
       }, { once: true });
       playVideo();
     } else {
@@ -134,12 +136,14 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
+    // YouTube embeds are generally reliable — mark as online after load
     return (
       <iframe
         src={embedUrl || ""}
         className="w-full h-full absolute inset-0 border-0"
         allow="autoplay; encrypted-media"
         allowFullScreen
+        onLoad={() => onReady?.()}
       />
     );
   }
@@ -274,6 +278,11 @@ const TVTab = () => {
   const [search, setSearch] = useState("");
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [channelStatus, setChannelStatus] = useState<Record<string, "online" | "offline">>({});
+
+  const markChannelStatus = useCallback((channelId: string, status: "online" | "offline") => {
+    setChannelStatus((prev) => ({ ...prev, [channelId]: status }));
+  }, []);
 
   const fetchStreams = useCallback(async () => {
     setLoading(true);
@@ -402,7 +411,7 @@ const TVTab = () => {
               </Button>
             </div>
           ) : activeChannel?.url ? (
-            <StreamPlayer url={activeChannel.url} onError={() => setHasError(true)} />
+            <StreamPlayer url={activeChannel.url} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-background aspect-video">
               {loading ? (
@@ -486,9 +495,21 @@ const TVTab = () => {
                         {ch.icon}
                       </div>
                       <div className="flex-1 text-left min-w-0">
-                        <h4 className={`font-bold text-sm truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
-                          {ch.name}
-                        </h4>
+                        <div className="flex items-center gap-1.5">
+                          <h4 className={`font-bold text-sm truncate ${activeChannel?.id === ch.id ? "text-accent" : "text-foreground"}`}>
+                            {ch.name}
+                          </h4>
+                          {channelStatus[ch.id] === "online" && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-green-500/15 text-green-500 text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-green-500/30">
+                              <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />EN LIGNE
+                            </span>
+                          )}
+                          {channelStatus[ch.id] === "offline" && (
+                            <span className="shrink-0 inline-flex items-center gap-0.5 bg-destructive/15 text-destructive text-[8px] font-black uppercase px-1.5 py-0.5 rounded-full border border-destructive/30">
+                              <span className="w-1.5 h-1.5 bg-destructive rounded-full" />HORS LIGNE
+                            </span>
+                          )}
+                        </div>
                         <p className="text-[10px] text-muted-foreground uppercase">{ch.category}</p>
                       </div>
                       {ch.quality && <span className="text-[9px] text-accent font-bold mr-2">{ch.quality}</span>}
