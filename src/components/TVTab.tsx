@@ -35,26 +35,21 @@ const CHANNELS_DATA: Channel[] = [
   { id: "nessma-yt", name: "Nessma TV", url: "https://www.youtube.com/watch?v=xAZDxSrkyqc", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
   { id: "mosaique", name: "Mosaïque FM TV", url: "https://webcam.mosaiquefm.net/mosatv/_definst_/studio/playlist.m3u8?DVR", category: "Tunisie", icon: "🇹🇳", quality: "1080p" },
   { id: "jawhara-tv", name: "Jawhara TV", url: "https://streaming.toutech.net/live/jtv/index.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
-  // === INFOS INTERNATIONALES - YouTube Live (fiable, pas de CORS) ===
-  { id: "aljazeera", name: "Al Jazeera Arabic", url: "https://www.youtube.com/watch?v=uPh_v39Cbow", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "aljazeera-en", name: "Al Jazeera English", url: "https://www.youtube.com/watch?v=gCNeDWCI0vo", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "france24", name: "France 24 FR", url: "https://www.youtube.com/watch?v=l8PMl7tUDIE", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "france24-ar", name: "France 24 Arabic", url: "https://www.youtube.com/watch?v=UsSxJrkYOD0", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "dw", name: "DW News", url: "https://www.youtube.com/watch?v=GE_SfNVNyqk", category: "Infos", icon: "🌍", quality: "YT" },
-  { id: "dw-ar", name: "DW Arabic", url: "https://www.youtube.com/watch?v=xq9gRWBCx0s", category: "Infos", icon: "🌍", quality: "YT" },
-  { id: "euronews", name: "Euronews FR", url: "https://www.youtube.com/watch?v=NiRIbKwGLlE", category: "Infos", icon: "🇪🇺", quality: "YT" },
-  { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJE", category: "Infos", icon: "🇹🇷", quality: "YT" },
-  { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=OZTqFgkKnHc", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "sky-news-ar", name: "Sky News Arabia", url: "https://www.youtube.com/watch?v=cLFZepUSmPE", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "alarabiya", name: "Al Arabiya", url: "https://www.youtube.com/watch?v=1IZxnmJKbfk", category: "Infos", icon: "📡", quality: "YT" },
+  // === INFOS - YouTube Channel Live (toujours à jour) ===
+  { id: "aljazeera", name: "Al Jazeera Arabic", url: "yt-channel://UCfiwzLy-8yKzIbsmZTzxDgw", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "aljazeera-en", name: "Al Jazeera English", url: "yt-channel://UCNye-wNBqNL5ZzHSJj3l8Bg", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "france24-fr", name: "France 24 FR", url: "yt-channel://UCCCPCZNChQdGa9EkATeye4g", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "france24-ar", name: "France 24 Arabic", url: "yt-channel://UCDFHjBCIKYwMISMB2JDlnaQ", category: "Infos", icon: "🇫🇷", quality: "YT" },
+  { id: "dw", name: "DW News", url: "yt-channel://UCknLrEdhRCp1aegoMqRaCZg", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "dw-ar", name: "DW عربية", url: "yt-channel://UCjQxXq6dFqKOqOJnkDGgW8A", category: "Infos", icon: "🌍", quality: "YT" },
+  { id: "euronews", name: "Euronews FR", url: "yt-channel://UCW2QcKZiU8aUGg4yxCIditg", category: "Infos", icon: "🇪🇺", quality: "YT" },
+  { id: "trt", name: "TRT World", url: "yt-channel://UC7fWeaHhqgM4Lba0JzhRlwg", category: "Infos", icon: "🇹🇷", quality: "YT" },
+  { id: "sky-news-ar", name: "Sky News Arabia", url: "yt-channel://UCfiwzLy-8yKzIbsmZTzxDgw", category: "Infos", icon: "📡", quality: "YT" },
+  { id: "alarabiya", name: "Al Arabiya", url: "yt-channel://UCbyxxGIjqZiJn4VmMOCd8Wg", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
-  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "https://www.youtube.com/watch?v=T_DEYhnqopI", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass", name: "Al Kass Sports", url: "https://www.youtube.com/watch?v=Gv4MJ3ypfA4", category: "Sports", icon: "⚽", quality: "YT" },
-  // === SCIENCE / CULTURE ===
-  { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=21X5lGlDOfg", category: "Science", icon: "🚀", quality: "YT" },
-  { id: "cgtn", name: "CGTN", url: "https://www.youtube.com/watch?v=TUGjklKqkGk", category: "Infos", icon: "🌏", quality: "YT" },
-  // === DIVERTISSEMENT ===
-  { id: "rotana-cinema", name: "Rotana Cinema", url: "https://www.youtube.com/watch?v=AMZmHAzhko0", category: "Cinéma", icon: "🎬", quality: "YT" },
+  { id: "bein-xtra", name: "beIN SPORTS Xtra", url: "yt-channel://UCxVmaFbMvkBP4NalU3Rwi8g", category: "Sports", icon: "⚽", quality: "YT" },
+  // === SCIENCE ===
+  { id: "nasa", name: "NASA TV", url: "yt-channel://UCLA_DiR1FfKNvjuUpBHmylQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
