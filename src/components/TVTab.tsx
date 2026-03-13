@@ -136,7 +136,7 @@ const StreamPlayer = ({ url, onError }: { url: string; onError: () => void }) =>
         height="100%"
         style={{ position: 'absolute', top: 0, left: 0 }}
         onError={() => onError()}
-        config={{ youtube: { playerVars: { modestbranding: 1 } } }}
+        config={{ youtube: { embedOptions: { modestbranding: 1 } } }}
       />
     );
   }
