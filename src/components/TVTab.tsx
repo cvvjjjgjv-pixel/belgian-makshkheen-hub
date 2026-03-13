@@ -274,6 +274,11 @@ const TVTab = () => {
   const [search, setSearch] = useState("");
   const [apiChannels, setApiChannels] = useState<Channel[]>([]);
   const [loading, setLoading] = useState(true);
+  const [channelStatus, setChannelStatus] = useState<Record<string, "online" | "offline">>({});
+
+  const markChannelStatus = useCallback((channelId: string, status: "online" | "offline") => {
+    setChannelStatus((prev) => ({ ...prev, [channelId]: status }));
+  }, []);
 
   const fetchStreams = useCallback(async () => {
     setLoading(true);
