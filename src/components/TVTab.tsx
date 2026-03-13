@@ -174,21 +174,7 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url, isYouTube, isIframe]);
-
-  // iframe: prefix → render raw iframe
-  if (isIframe) {
-    const iframeSrc = url.replace(/^iframe:/, "");
-    return (
-      <iframe
-        src={iframeSrc}
-        className="w-full h-full absolute inset-0 border-0"
-        allow="autoplay; encrypted-media; fullscreen"
-        allowFullScreen
-        onLoad={() => onReady?.()}
-      />
-    );
-  }
+  }, [url, isYouTube]);
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
