@@ -31,13 +31,13 @@ const PROXY_FUNCTION_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/tv
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
 
 const FALLBACK_CHANNELS: Channel[] = [
-  { name: "Al Jazeera Arabic", icon: "📡", url: "https://live-hls-web-aj.getaj.net/AJAR/index.m3u8" },
+  { name: "CBC News Toronto", icon: "📰", url: "https://amagi-streams.akamaized.net/hls/live/2110961/cbctoronto/master.m3u8", quality: "1080p" },
+  { name: "CBC News BC", icon: "📰", url: "https://amagi-streams.akamaized.net/hls/live/2110960/cbcnewsbc/master.m3u8", quality: "1080p" },
+  { name: "CBC Comedy", icon: "🎭", url: "https://amagi-streams.akamaized.net/hls/live/2110963/cbccomedy/master.m3u8", quality: "1080p" },
+  { name: "CBC Heartland", icon: "❤️", url: "https://amagi-streams.akamaized.net/hls/live/2113391/cbcheartland/master.m3u8", quality: "1080p" },
   { name: "France 24 FR", icon: "🇫🇷", url: "https://static.france24.com/live/F24_FR_HI_HLS/live_tv.m3u8" },
   { name: "France 24 AR", icon: "🇫🇷", url: "https://static.france24.com/live/F24_AR_HI_HLS/live_tv.m3u8" },
-  { name: "NASA TV", icon: "🚀", url: "https://ntv1.akamaized.net/hls/live/2014049/NASA-NTV1-HLS/master.m3u8" },
-  { name: "DW News", icon: "🇩🇪", url: "https://dwamdstream102.akamaized.net/hls/live/2015525/dwstream102/index.m3u8" },
   { name: "TRT World", icon: "🇹🇷", url: "https://tv-trtworld.medya.trt.com.tr/master.m3u8" },
-  { name: "CGTN", icon: "🇨🇳", url: "https://news.cgtn.com/resource/live/english/cgtn-news.m3u8" },
 ];
 
 const SPORT_KEYWORDS = [
