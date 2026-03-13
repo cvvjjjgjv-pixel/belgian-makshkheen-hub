@@ -49,6 +49,7 @@ const CHANNELS_DATA: Channel[] = [
   { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJI", category: "Infos", icon: "🇹🇷", quality: "YT" },
   { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=fBq7fv6BfxQ", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
+  { id: "bein-sport", name: "beIN SPORTS", url: "https://www.youtube.com/watch?v=yBcrrpetg4Y", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra1", name: "beIN SPORTS Xtra 1", url: "https://www.youtube.com/watch?v=zCB59AxYwIo", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra2", name: "beIN SPORTS Xtra 2", url: "https://www.youtube.com/watch?v=JLtS2aFI8IU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra3", name: "beIN SPORTS Xtra 3", url: "https://www.youtube.com/watch?v=sDt1GXEH6WM", category: "Sports", icon: "⚽", quality: "YT" },
