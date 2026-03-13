@@ -106,10 +106,9 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isYouTube = isYouTubeUrl(url);
-  const isIframe = isIframeUrl(url);
 
   useEffect(() => {
-    if (isYouTube || isIframe) return;
+    if (isYouTube) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
