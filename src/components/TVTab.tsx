@@ -378,8 +378,11 @@ const TVTab = () => {
   const allChannels = [...FALLBACK_CHANNELS, ...apiChannels, ...customChannels];
 
   useEffect(() => {
-    if (!activeChannel && allChannels.length > 0) setActiveChannel(allChannels[0]);
-  }, [allChannels, activeChannel]);
+    if (!activeChannel && allChannels.length > 0) {
+      const firstAvailable = allChannels.find((channel) => !deadChannels.has(channel.url)) ?? allChannels[0];
+      setActiveChannel(firstAvailable);
+    }
+  }, [allChannels, activeChannel, deadChannels]);
 
   const handleChannelClick = (ch: Channel) => {
     if (!ch.url) {
