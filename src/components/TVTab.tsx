@@ -12,7 +12,7 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
   return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1` : null;
 };
 const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
-const isIframeUrl = (url: string) => url.startsWith("iframe:");
+
 
 interface Channel {
   id: string;
@@ -58,9 +58,8 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass1", name: "Al Kass 1 (SD)", url: "https://corsproxy.io/?http://174.122.201.218:1935/dkass_sd/my1/playlist.m3u8", category: "Sports", icon: "🏆", quality: "SD" },
-  { id: "alkass2", name: "Al Kass 2", url: "https://corsproxy.io/?https://liveeu-gcps.alkassdigital.net/alkass2-p/20260219T144749Z/mux_video_720p_ts/hdntl=exp=1773507399~acl=%2f*~data=hdntl~hmac=b9e7cb0b305eabe444e1e19c089f69a47025763bdc7ea47d901adac7f4ac534b/index-1.m3u8", category: "Sports", icon: "🏆", quality: "HD" },
-  { id: "alkass-web", name: "Al Kass (Web)", url: "iframe:https://www.alkass.net/alkass/live.aspx?ch=two", category: "Sports", icon: "🏆", quality: "WEB" },
+  { id: "alkass_direct", name: "Al Kass 2 (Direct)", url: "https://liveeu-gcps.alkassdigital.net/alkass2-p/20260219T144749Z/mux_video_720p_ts/hdntl=exp=1773507399~acl=%2f*~data=hdntl~hmac=b9e7cb0b305eabe444e1e19c089f69a47025763bdc7ea47d901adac7f4ac534b/index-1.m3u8", category: "Sports", icon: "🏆" },
+  { id: "alkass_secours", name: "Al Kass (Secours)", url: "https://shls-alkass-ak.akamaized.net/out/v1/a24d2bd5e2fb4e0ca2dcb9ff1c96af05/index.m3u8", category: "Sports", icon: "🏆" },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
@@ -107,10 +106,9 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const isYouTube = isYouTubeUrl(url);
-  const isIframe = isIframeUrl(url);
 
   useEffect(() => {
-    if (isYouTube || isIframe) return;
+    if (isYouTube) return;
     const video = videoRef.current;
     if (!video || !url) return;
 
@@ -176,21 +174,7 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
       if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [url, isYouTube, isIframe]);
-
-  // iframe: prefix → render raw iframe
-  if (isIframe) {
-    const iframeSrc = url.replace(/^iframe:/, "");
-    return (
-      <iframe
-        src={iframeSrc}
-        className="w-full h-full absolute inset-0 border-0"
-        allow="autoplay; encrypted-media; fullscreen"
-        allowFullScreen
-        onLoad={() => onReady?.()}
-      />
-    );
-  }
+  }, [url, isYouTube]);
 
   if (isYouTube) {
     const embedUrl = getYouTubeEmbedUrl(url);
