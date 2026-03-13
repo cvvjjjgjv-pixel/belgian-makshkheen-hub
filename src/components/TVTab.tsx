@@ -11,6 +11,8 @@ interface Channel {
   icon: string;
   url: string;
   quality?: string;
+  referrer?: string | null;
+  userAgent?: string | null;
 }
 
 interface StreamData {
@@ -24,6 +26,11 @@ interface StreamData {
 }
 
 const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
+const PROJECT_ID = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+const IPTV_PROXY_BASE_URL = PROJECT_ID
+  ? `https://${PROJECT_ID}.supabase.co/functions/v1/iptv-stream-proxy`
+  : "";
 
 // These are known-working public streams with proper CORS headers
 const RELIABLE_CHANNELS: Channel[] = [
@@ -51,6 +58,16 @@ const STORAGE_KEY = "tv-bein-custom-links";
 const STREAMS_CACHE_KEY = "tv-iptv-streams-cache";
 const STREAMS_CACHE_TTL = 30 * 60 * 1000;
 const DEAD_CHANNELS_KEY = "tv-dead-channels";
+
+const buildChannelPlaybackUrl = (channel: Channel) => {
+  if (!IPTV_PROXY_BASE_URL) return channel.url;
+
+  const params = new URLSearchParams({ url: channel.url });
+  if (channel.referrer) params.set("referrer", channel.referrer);
+  if (channel.userAgent) params.set("user_agent", channel.userAgent);
+
+  return `${IPTV_PROXY_BASE_URL}?${params.toString()}`;
+};
 
 const loadCustomLinks = (): string[] => {
   try {
