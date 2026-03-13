@@ -133,14 +133,17 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
         xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
           xhr.withCredentials = false;
           if (useProxy) {
-            // Intercept: rewrite to POST through proxy
-            const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
-            xhr.open('POST', proxyUrl, true);
-            xhr.setRequestHeader('Content-Type', 'application/json');
-            const origSend = xhr.send.bind(xhr);
-            xhr.send = () => {
-              origSend(JSON.stringify({ url: xhrUrl }));
-            };
+            // Only proxy manifest files (.m3u8), let segments (.ts) load directly from CDN
+            const isManifest = xhrUrl.includes('.m3u8') || xhrUrl.includes('m3u8') || !xhrUrl.includes('.ts');
+            if (isManifest) {
+              const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+              xhr.open('POST', proxyUrl, true);
+              xhr.setRequestHeader('Content-Type', 'application/json');
+              const origSend = xhr.send.bind(xhr);
+              xhr.send = () => {
+                origSend(JSON.stringify({ url: xhrUrl }));
+              };
+            }
           }
         },
       });
