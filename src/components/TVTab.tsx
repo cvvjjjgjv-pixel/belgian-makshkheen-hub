@@ -304,6 +304,8 @@ const TVTab = () => {
             icon: "⚽",
             url: s.url,
             quality: s.quality || undefined,
+            referrer: s.referrer,
+            userAgent: s.user_agent,
           });
         }
       }
