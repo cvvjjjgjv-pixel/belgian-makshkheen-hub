@@ -121,6 +121,7 @@ const StreamPlayer = ({ url, onError, onReady }: { url: string; onError: () => v
       video.src = url;
       video.addEventListener("loadedmetadata", () => {
         if (timeoutRef.current) clearTimeout(timeoutRef.current);
+        onReady?.();
       }, { once: true });
       playVideo();
     } else {
