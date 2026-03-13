@@ -143,9 +143,9 @@ const HLSPlayer = ({ url, playing, onError }: { url: string; playing: boolean; o
         fragLoadingMaxRetry: 1,
         xhrSetup: (xhr, requestUrl) => {
           xhr.withCredentials = false;
-          if (IPTV_PROXY_BASE_URL && requestUrl?.startsWith(IPTV_PROXY_BASE_URL) && PUBLISHABLE_KEY) {
-            xhr.setRequestHeader("apikey", PUBLISHABLE_KEY);
-            xhr.setRequestHeader("Authorization", `Bearer ${PUBLISHABLE_KEY}`);
+          if (IPTV_PROXY_BASE_URL && requestUrl?.startsWith(IPTV_PROXY_BASE_URL) && PROXY_REQUEST_HEADERS) {
+            xhr.setRequestHeader("apikey", PROXY_REQUEST_HEADERS.apikey);
+            xhr.setRequestHeader("Authorization", PROXY_REQUEST_HEADERS.Authorization);
           }
         },
       });
