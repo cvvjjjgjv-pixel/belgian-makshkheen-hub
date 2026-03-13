@@ -135,7 +135,8 @@ const HLSPlayer = ({
         xhrSetup: (xhr) => {
           xhr.withCredentials = false;
           if (PUBLISHABLE_KEY) xhr.setRequestHeader("apikey", PUBLISHABLE_KEY);
-          if (authToken) xhr.setRequestHeader("authorization", `Bearer ${authToken}`);
+          const accessToken = authToken || PUBLISHABLE_KEY || "";
+          if (accessToken) xhr.setRequestHeader("authorization", `Bearer ${accessToken}`);
           xhr.setRequestHeader("x-client-info", "tv-player");
         },
       });
