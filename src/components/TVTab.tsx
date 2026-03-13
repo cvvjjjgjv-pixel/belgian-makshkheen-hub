@@ -57,11 +57,11 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass1", name: "Al Kass One HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093498/ALKASS-ONE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass2", name: "Al Kass Two HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093499/ALKASS-TWO-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass3", name: "Al Kass Three HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093500/ALKASS-THREE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass4", name: "Al Kass Four HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093501/ALKASS-FOUR-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass5", name: "Al Kass Five HD", url: "https://alkass-live-hls.alkass.net/hls/live/2093502/ALKASS-FIVE-LIVE/master.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass1", name: "Al Kass One HD", url: "https://liveeu-gcps.alkassdigital.net/alkass1-p/main.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass2", name: "Al Kass Two HD", url: "https://liveeu-gcps.alkassdigital.net/alkass2-p/main.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass3", name: "Al Kass Three HD", url: "https://liveeu-gcps.alkassdigital.net/alkass3-p/main.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass4", name: "Al Kass Four HD", url: "https://liveeu-gcps.alkassdigital.net/alkass4-p/main.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass5", name: "Al Kass Five HD", url: "https://liveeu-gcps.alkassdigital.net/alkass5-p/main.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
