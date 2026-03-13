@@ -631,23 +631,59 @@ const TVTab = () => {
       {/* Settings */}
       <AnimatePresence>
         {showSettings && (
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mx-3 mb-4 rounded-2xl border-2 border-accent/30 bg-card p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-bold text-foreground">⚙️ Liens personnalisés</h3>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="mx-3 mb-4 rounded-2xl border-2 border-accent/30 bg-card p-4 space-y-6">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-foreground">⚙️ Paramètres TV</h3>
               <Button variant="ghost" size="icon" onClick={() => setShowSettings(false)} className="h-8 w-8"><X className="w-4 h-4" /></Button>
             </div>
-            <p className="text-xs text-muted-foreground mb-3">Collez vos liens .m3u8. Sauvegarde automatique.</p>
-            <div className="space-y-2 max-h-[300px] overflow-y-auto">
-              {customLinks.map((link, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-muted-foreground w-14 shrink-0">Lien {i + 1}</span>
-                  <Input value={link} onChange={(e) => updateLink(i, e.target.value)} placeholder="https://...m3u8" className="text-xs h-9 bg-secondary border-border" />
+
+            {/* Xtream Codes Section */}
+            <div className="space-y-3">
+              <div className="flex items-center gap-2">
+                <Radio className="w-4 h-4 text-accent" />
+                <h4 className="text-xs font-bold text-foreground uppercase">Serveur Xtream Codes</h4>
+                {xtreamConfig && <span className="text-[9px] bg-accent/20 text-accent px-2 py-0.5 rounded-full font-bold">Connecté</span>}
+              </div>
+              {xtreamConfig ? (
+                <div className="space-y-2">
+                  <div className="bg-secondary/50 rounded-xl p-3 space-y-1">
+                    <p className="text-[10px] text-muted-foreground">Serveur: <span className="text-foreground font-mono">{xtreamConfig.server}</span></p>
+                    <p className="text-[10px] text-muted-foreground">Login: <span className="text-foreground font-mono">{xtreamConfig.username}</span></p>
+                    <p className="text-[10px] text-muted-foreground">Chaînes: <span className="text-accent font-bold">{xtreamChannels.length}</span></p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" className="flex-1 text-xs" onClick={() => { localStorage.removeItem(XTREAM_CACHE_KEY); fetchXtreamChannels(xtreamConfig); }} disabled={xtreamLoading}>
+                      {xtreamLoading ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                      Rafraîchir
+                    </Button>
+                    <Button variant="outline" size="sm" className="text-xs text-destructive border-destructive/30" onClick={clearXtreamConfig}>
+                      <Trash2 className="w-3 h-3 mr-1" /> Déconnecter
+                    </Button>
+                  </div>
                 </div>
-              ))}
+              ) : (
+                <XtreamLoginForm onConnect={saveXtreamConfig} loading={xtreamLoading} />
+              )}
             </div>
-            <Button variant="outline" size="sm" className="mt-3 w-full text-xs" onClick={() => { setCustomLinks(Array(10).fill("")); toast.success("Liens réinitialisés"); }}>
-              🗑️ Réinitialiser
-            </Button>
+
+            <div className="border-t border-border" />
+
+            {/* Custom Links Section */}
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold text-foreground uppercase">🔗 Liens personnalisés</h4>
+              <p className="text-[10px] text-muted-foreground">Collez vos liens .m3u8. Sauvegarde automatique.</p>
+              <div className="space-y-2 max-h-[200px] overflow-y-auto">
+                {customLinks.map((link, i) => (
+                  <div key={i} className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-muted-foreground w-14 shrink-0">Lien {i + 1}</span>
+                    <Input value={link} onChange={(e) => updateLink(i, e.target.value)} placeholder="https://...m3u8" className="text-xs h-9 bg-secondary border-border" />
+                  </div>
+                ))}
+              </div>
+              <Button variant="outline" size="sm" className="w-full text-xs" onClick={() => { setCustomLinks(Array(10).fill("")); toast.success("Liens réinitialisés"); }}>
+                🗑️ Réinitialiser
+              </Button>
+            </div>
           </motion.div>
         )}
       </AnimatePresence>
