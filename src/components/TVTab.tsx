@@ -6,17 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 
-// Extract YouTube video ID or channel ID for embedding
+// Extract YouTube video ID for embedding
 const getYouTubeEmbedUrl = (url: string): string | null => {
-  // Channel live format: yt-channel://CHANNEL_ID
-  if (url.startsWith("yt-channel://")) {
-    return `https://www.youtube.com/embed/live_stream?channel=${url.replace("yt-channel://", "")}&autoplay=1`;
-  }
-  // Standard video URL
-  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  // Standard video URL or youtu.be
+  const m = url.match(/(?:v=|youtu\.be\/|\/live\/)([a-zA-Z0-9_-]{11})/);
   return m ? `https://www.youtube.com/embed/${m[1]}?autoplay=1&rel=0` : null;
 };
-const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be") || url.startsWith("yt-channel://");
+const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
 
 interface Channel {
   id: string;
