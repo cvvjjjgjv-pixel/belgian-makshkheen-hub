@@ -12,7 +12,7 @@ const getYouTubeEmbedUrl = (url: string): string | null => {
   return m ? `https://www.youtube-nocookie.com/embed/${m[1]}?autoplay=1&rel=0&modestbranding=1` : null;
 };
 const isYouTubeUrl = (url: string) => url.includes("youtube.com") || url.includes("youtu.be");
-const isIframeUrl = (url: string) => url.startsWith("iframe:");
+
 
 interface Channel {
   id: string;
