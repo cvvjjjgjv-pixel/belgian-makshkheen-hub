@@ -72,7 +72,6 @@ const loadXtreamConfig = (): XtreamConfig | null => {
     return saved ? JSON.parse(saved) : null;
   } catch { return null; }
 };
-const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
 
 const SPORT_KEYWORDS = [
   "bein", "sport", "eurosport", "sky sport", "espn", "fox sport",
