@@ -53,8 +53,25 @@ const CHANNELS_DATA: Channel[] = [
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
+const XTREAM_STORAGE_KEY = "tv-xtream-config";
 const STREAMS_CACHE_KEY = "tv-iptv-streams-cache";
+const XTREAM_CACHE_KEY = "tv-xtream-channels-cache";
 const STREAMS_CACHE_TTL = 30 * 60 * 1000;
+const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+
+interface XtreamConfig {
+  server: string;
+  username: string;
+  password: string;
+}
+
+const loadXtreamConfig = (): XtreamConfig | null => {
+  try {
+    const saved = localStorage.getItem(XTREAM_STORAGE_KEY);
+    return saved ? JSON.parse(saved) : null;
+  } catch { return null; }
+};
 const STREAMS_API = "https://iptv-org.github.io/api/streams.json";
 
 const SPORT_KEYWORDS = [
