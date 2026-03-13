@@ -546,7 +546,7 @@ const TVTab = () => {
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 bg-accent rounded-full flex items-center justify-center font-bold text-accent-foreground text-sm">M</div>
           <div>
-            <h2 className="text-sm font-bold text-primary-foreground uppercase tracking-wide">Makshkheen TV</h2>
+            <h2 className="text-sm font-bold text-primary-foreground uppercase tracking-wide">Mkachkhines TV</h2>
             <p className="text-[10px] text-primary-foreground/60 uppercase">En Direct</p>
           </div>
         </div>

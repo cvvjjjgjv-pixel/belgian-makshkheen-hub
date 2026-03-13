@@ -68,7 +68,7 @@ const Presentation = () => {
         className="mb-6"
       >
         <div className="w-28 h-28 rounded-full border-4 border-accent overflow-hidden shadow-[0_0_40px_hsl(51_100%_50%/0.3)]">
-          <img src={logo} alt="Makshkheen" className="w-full h-full object-cover" />
+          <img src={logo} alt="Mkachkhines" className="w-full h-full object-cover" />
         </div>
       </motion.div>
 
@@ -87,7 +87,7 @@ const Presentation = () => {
         transition={{ delay: 0.5 }}
         className="text-xl md:text-2xl font-bold text-foreground mb-2"
       >
-        Makshkheen Belgium
+        Mkachkhines Belgique
       </motion.p>
 
       <motion.p
@@ -251,7 +251,7 @@ const Presentation = () => {
         transition={{ delay: 0.3 }}
         className="text-3xl md:text-4xl font-black text-foreground mb-4"
       >
-        Rejoignez les <span className="text-accent">Makshkheen</span>
+        Rejoignez les <span className="text-accent">Mkachkhines</span>
       </motion.h2>
 
       <motion.p
