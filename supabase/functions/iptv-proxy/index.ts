@@ -5,6 +5,34 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
+function resolveRelativeUrls(manifest: string, baseUrl: string): string {
+  // Get base path (remove filename from URL)
+  const lastSlash = baseUrl.lastIndexOf('/');
+  const basePath = lastSlash >= 0 ? baseUrl.substring(0, lastSlash + 1) : baseUrl + '/';
+  
+  // Get origin for protocol-relative URLs
+  const urlObj = new URL(baseUrl);
+  const origin = urlObj.origin;
+
+  return manifest.split('\n').map(line => {
+    const trimmed = line.trim();
+    // Skip empty lines, comments, and already-absolute URLs
+    if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+      return line;
+    }
+    // Protocol-relative
+    if (trimmed.startsWith('//')) {
+      return urlObj.protocol + trimmed;
+    }
+    // Absolute path
+    if (trimmed.startsWith('/')) {
+      return origin + trimmed;
+    }
+    // Relative path - resolve against base
+    return basePath + trimmed;
+  }).join('\n');
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -40,6 +68,31 @@ serve(async (req) => {
     }
 
     const contentType = response.headers.get('content-type') || 'application/octet-stream';
+    
+    // For m3u8 manifests, rewrite relative URLs to absolute
+    const isManifest = contentType.includes('mpegurl') || 
+                       contentType.includes('m3u8') || 
+                       url.endsWith('.m3u8') || 
+                       contentType.includes('text/plain');
+    
+    if (isManifest) {
+      const text = await response.text();
+      // Only process if it looks like an m3u8
+      if (text.trimStart().startsWith('#EXTM3U') || text.includes('#EXT-X-')) {
+        // Use final URL after redirects
+        const finalUrl = response.url || url;
+        const rewritten = resolveRelativeUrls(text, finalUrl);
+        return new Response(rewritten, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/vnd.apple.mpegurl',
+            'Cache-Control': 'no-cache',
+          },
+        });
+      }
+    }
+
     const body = await response.arrayBuffer();
 
     return new Response(body, {
