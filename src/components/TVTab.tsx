@@ -411,7 +411,7 @@ const TVTab = () => {
               </Button>
             </div>
           ) : activeChannel?.url ? (
-            <StreamPlayer url={activeChannel.url} onError={() => setHasError(true)} />
+            <StreamPlayer url={activeChannel.url} onError={() => { setHasError(true); markChannelStatus(activeChannel.id, "offline"); }} onReady={() => markChannelStatus(activeChannel.id, "online")} />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-background aspect-video">
               {loading ? (
