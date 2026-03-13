@@ -15,11 +15,24 @@ interface Channel {
   quality?: string;
 }
 
-// --- CHAÎNES FIABLES ---
+// --- CHAÎNES ---
 const CHANNELS_DATA: Channel[] = [
-  // Tunisie
+  // Tunisie - Sources officielles HLS
   { id: "watania1", name: "Watania 1", url: "https://corsproxy.io/?https://streaming.alwatanya.tn/live/w1/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
   { id: "watania2", name: "Watania 2", url: "https://corsproxy.io/?https://streaming.alwatanya.tn/live/w2/playlist.m3u8", category: "Tunisie", icon: "🇹🇳" },
+  // Tunisie - IPTV
+  { id: "nessma", name: "Nessma TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/1235", category: "Tunisie", icon: "🇹🇳" },
+  { id: "attessia", name: "Attessia TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/11237", category: "Tunisie", icon: "🇹🇳" },
+  { id: "carthage", name: "Carthage+", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/33089", category: "Tunisie", icon: "🇹🇳" },
+  { id: "elhiwar", name: "Elhiwar Ettounsi", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/1255", category: "Tunisie", icon: "🇹🇳" },
+  { id: "hannibal", name: "Hannibal TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/1253", category: "Tunisie", icon: "🇹🇳" },
+  { id: "jawhara", name: "Jawhara FM", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/278644", category: "Tunisie", icon: "🇹🇳" },
+  { id: "sahel", name: "Sahel TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/146234", category: "Tunisie", icon: "🇹🇳" },
+  { id: "telvza", name: "Telvza TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/11877", category: "Tunisie", icon: "🇹🇳" },
+  { id: "tunisna", name: "Tunisna TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/11172", category: "Tunisie", icon: "🇹🇳" },
+  { id: "zitouna", name: "Zitouna TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/11359", category: "Tunisie", icon: "🇹🇳" },
+  { id: "alinsen", name: "Al Insen TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/225155", category: "Tunisie", icon: "🇹🇳" },
+  { id: "janoubia", name: "Al Janoubia TV", url: "https://corsproxy.io/?http://aflaxtv.xyz:8080/test_acct/ohbo1veifa4AhD/278639", category: "Tunisie", icon: "🇹🇳" },
   // Sports - Liens test stables
   { id: "bein1", name: "beIN SPORTS 1 HD", url: "https://bitdash-a.akamaihd.net/content/sintel/hls/playlist.m3u8", category: "Sports", icon: "⚽" },
   { id: "bein2", name: "beIN SPORTS 2 HD", url: "https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8", category: "Sports", icon: "⚽" },
