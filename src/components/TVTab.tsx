@@ -127,48 +127,23 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
     };
 
     if (Hls.isSupported()) {
-      const hlsConfig: Partial<any> = {
+      const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
-      };
-
-      if (useProxy) {
-        const proxyBase = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
-        hlsConfig.pLoader = class ProxyLoader extends Hls.DefaultConfig.loader {
-          load(context: any, config: any, callbacks: any) {
-            const originalUrl = context.url;
-            context.url = proxyBase;
-            context.headers = { 'Content-Type': 'application/json' };
-            // Override to POST with the real URL
-            const origOnSuccess = callbacks.onSuccess;
-            // Use fetch-based approach for proxy
-            fetch(proxyBase, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ url: originalUrl }),
-            })
-              .then(res => {
-                if (!res.ok) throw new Error(`Proxy error ${res.status}`);
-                return res.arrayBuffer();
-              })
-              .then(buffer => {
-                const response = {
-                  url: originalUrl,
-                  data: new Uint8Array(buffer),
-                };
-                const stats = { loading: { start: 0, first: 0, end: 0 }, loaded: buffer.byteLength, total: buffer.byteLength, bwEstimate: 0, retry: 0, parsed: undefined, buffering: { start: 0, first: 0, end: 0 } };
-                origOnSuccess(response, stats, context, undefined);
-              })
-              .catch(err => {
-                callbacks.onError({ code: 0, text: err.message }, context, undefined, stats);
-              });
+        xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
+          xhr.withCredentials = false;
+          if (useProxy) {
+            // Intercept: rewrite to POST through proxy
+            const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+            xhr.open('POST', proxyUrl, true);
+            xhr.setRequestHeader('Content-Type', 'application/json');
+            const origSend = xhr.send.bind(xhr);
+            xhr.send = () => {
+              origSend(JSON.stringify({ url: xhrUrl }));
+            };
           }
-        };
-      } else {
-        hlsConfig.xhrSetup = (xhr: XMLHttpRequest) => { xhr.withCredentials = false; };
-      }
-
-      const hls = new Hls(hlsConfig);
+        },
+      });
       hls.loadSource(url);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
