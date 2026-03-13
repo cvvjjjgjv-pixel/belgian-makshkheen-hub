@@ -1,11 +1,15 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Hls from "hls.js";
-import ReactPlayer from "react-player";
 import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+
+const getYouTubeId = (url: string) => {
+  const m = url.match(/(?:v=|youtu\.be\/)([a-zA-Z0-9_-]{11})/);
+  return m ? m[1] : null;
+};
 
 interface Channel {
   id: string;
