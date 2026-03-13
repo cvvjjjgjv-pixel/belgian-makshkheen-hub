@@ -434,7 +434,7 @@ const TVTab = () => {
               </Button>
             </div>
           ) : activeChannel?.url ? (
-            <HLSPlayer url={activeChannel.url} onError={() => setHasError(true)} />
+            <StreamPlayer url={activeChannel.url} onError={() => setHasError(true)} />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-background aspect-video">
               {loading ? (
