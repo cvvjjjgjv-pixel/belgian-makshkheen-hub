@@ -59,7 +59,11 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass_live", name: "Al Kass 2", url: "https://liveeu-gcps.alkassdigital.net/alkass2-p/20260219T144749Z/mux_video_720p_ts/hdntl=exp=1773507399~acl=%2f*~data=hdntl~hmac=b9e7cb0b305eabe444e1e19c089f69a47025763bdc7ea47d901adac7f4ac534b/index-1.m3u8", category: "Sports", icon: "🏆", quality: "720p", useProxy: true },
+  { id: "alkass1", name: "Al Kass 1", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass1", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass2", name: "Al Kass 2", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass2", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass4", name: "Al Kass 4", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass4", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass5", name: "Al Kass 5", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass5", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass_online", name: "Al Kass Online", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkassonline", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
