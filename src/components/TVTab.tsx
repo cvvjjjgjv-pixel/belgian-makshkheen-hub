@@ -49,6 +49,11 @@ const CHANNELS_DATA: Channel[] = [
   { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJI", category: "Infos", icon: "🇹🇷", quality: "YT" },
   { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=fBq7fv6BfxQ", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
+  { id: "alkass1", name: "Al Kass 1", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass1", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass2", name: "Al Kass 2", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass2", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass4", name: "Al Kass 4", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass4", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass5", name: "Al Kass 5", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass5", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
+  { id: "alkass_online", name: "Al Kass Online", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkassonline", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   { id: "bein-sport", name: "beIN SPORTS", url: "https://www.youtube.com/watch?v=yBcrrpetg4Y", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra1", name: "beIN SPORTS Xtra 1", url: "https://www.youtube.com/watch?v=zCB59AxYwIo", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra2", name: "beIN SPORTS Xtra 2", url: "https://www.youtube.com/watch?v=JLtS2aFI8IU", category: "Sports", icon: "⚽", quality: "YT" },
@@ -59,11 +64,6 @@ const CHANNELS_DATA: Channel[] = [
   { id: "bein-xtra7", name: "beIN SPORTS Xtra 7", url: "https://www.youtube.com/watch?v=VQRH3I9L_Xk", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra8", name: "beIN SPORTS Xtra 8", url: "https://www.youtube.com/watch?v=yBShNJgbzDU", category: "Sports", icon: "⚽", quality: "YT" },
   { id: "bein-xtra9", name: "beIN SPORTS Xtra 9", url: "https://www.youtube.com/watch?v=qGR_KXEULEY", category: "Sports", icon: "⚽", quality: "YT" },
-  { id: "alkass1", name: "Al Kass 1", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass1", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass2", name: "Al Kass 2", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass2", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass4", name: "Al Kass 4", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass4", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass5", name: "Al Kass 5", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkass5", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "alkass_online", name: "Al Kass Online", url: "http://www.elahmad.com/tv/m3u8/online_tv.m3u8?id=alkassonline", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   // === SCIENCE ===
   { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
 ];
