@@ -33,8 +33,6 @@ export default function LiveStreamTab() {
   const playStream = () => {
     let url = streamUrl.trim();
     if (!url) return;
-
-    // Nettoyage de l'URL si elle contient des espaces ou caractères bizarres
     url = url.replace(/\s/g, "");
 
     stopPlayback();
@@ -43,7 +41,6 @@ export default function LiveStreamTab() {
     const video = videoRef.current;
     if (!video) return;
 
-    // Détection forcée : si c'est du HTTP ou contient un chiffre à la fin, on utilise mpegts
     const isTs = url.includes(".ts") || url.match(/\/\d+$/) || url.startsWith("http:");
 
     if (url.includes("m3u8")) {
@@ -57,10 +54,13 @@ export default function LiveStreamTab() {
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          video.play().catch(() => {
-            video.muted = true;
-            video.play();
-          });
+          const promise = video.play() as any;
+          if (promise && typeof promise.catch === "function") {
+            promise.catch(() => {
+              video.muted = true;
+              video.play();
+            });
+          }
           setIsLoading(false);
           setIsPlaying(true);
         });
@@ -81,11 +81,15 @@ export default function LiveStreamTab() {
       );
       player.attachMediaElement(video);
       player.load();
-      player.play().catch(() => {
-        // Fallback si le moteur MSE échoue
-        video.src = url;
-        video.play();
-      });
+
+      const promise = player.play() as any;
+      if (promise && typeof promise.catch === "function") {
+        promise.catch(() => {
+          video.src = url;
+          video.play();
+        });
+      }
+
       mpegtsRef.current = player;
       setIsLoading(false);
       setIsPlaying(true);
@@ -97,11 +101,15 @@ export default function LiveStreamTab() {
     }
   };
 
+  useEffect(() => {
+    return () => stopPlayback();
+  }, []);
+
   return (
     <div className="min-h-screen bg-[#0a0a0a] text-white p-4">
       <div className="flex items-center gap-2 mb-6 justify-center">
         <Radio className="text-red-600 animate-pulse w-5 h-5" />
-        <h1 className="text-xl font-bold tracking-widest text-red-600">MKAKHINES TV</h1>
+        <h1 className="text-xl font-bold tracking-widest text-red-600 font-serif">MKAKHINES TV</h1>
       </div>
 
       <div className="max-w-3xl mx-auto space-y-4">
@@ -131,7 +139,7 @@ export default function LiveStreamTab() {
                   <div className="absolute inset-0 border-4 border-red-600/20 rounded-full"></div>
                   <div className="absolute inset-0 border-4 border-t-red-600 rounded-full animate-spin"></div>
                 </div>
-                <p className="text-sm font-medium text-zinc-400">Tentative de connexion...</p>
+                <p className="text-sm font-medium text-zinc-400">Mkakhines Connection...</p>
               </div>
             </div>
           )}
