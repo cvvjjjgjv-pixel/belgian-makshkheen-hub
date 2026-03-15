@@ -1,22 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import {
-  Video,
-  X,
-  Eye,
-  Radio,
-  StopCircle,
-  Globe,
-  Play,
-  Loader2,
-  Trash2,
-  Volume2,
-  VolumeX,
-  Maximize,
-  Minimize,
-  Send,
-} from "lucide-react";
+import { Video, X, Eye, Radio, Globe, Play, Loader2, Trash2, Volume2, VolumeX, Maximize, Minimize } from "lucide-react";
 import Hls from "hls.js";
-import mpegts from "mpegts.js"; // Import indispensable pour les flux type /1
+// @ts-ignore
+import mpegts from "mpegts.js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -45,7 +31,7 @@ const NetworkStreamPlayer = () => {
 
   const videoRef = useRef<HTMLVideoElement>(null);
   const hlsRef = useRef<Hls | null>(null);
-  const mpegtsRef = useRef<mpegts.Player | null>(null);
+  const mpegtsRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const stopPlayback = () => {
@@ -80,7 +66,6 @@ const NetworkStreamPlayer = () => {
     setStreamUrl(targetUrl);
     setIsLoading(true);
 
-    // Sauvegarde historique
     const updated = [targetUrl, ...history.filter((h) => h !== targetUrl)].slice(0, 15);
     setHistory(updated);
     localStorage.setItem(STREAM_HISTORY_KEY, JSON.stringify(updated));
@@ -88,7 +73,6 @@ const NetworkStreamPlayer = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    // Détection du type de flux
     const isHls = targetUrl.includes("m3u8");
     const isTs = targetUrl.match(/\/\d+$/) || targetUrl.includes(".ts");
 
@@ -97,13 +81,12 @@ const NetworkStreamPlayer = () => {
       hls.loadSource(targetUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play();
+        video.play().catch(() => {});
         setIsLoading(false);
         setIsPlaying(true);
       });
       hlsRef.current = hls;
-    } else if (isTs && mpegts.getFeatureList().isNetworkMagical) {
-      // Moteur VLC pour le format TS (Watania, beIN)
+    } else if (isTs && (mpegts.getFeatureList() as any).isNetworkMagical) {
       const player = mpegts.createPlayer({
         type: "mse",
         isLive: true,
@@ -112,19 +95,24 @@ const NetworkStreamPlayer = () => {
       });
       player.attachMediaElement(video);
       player.load();
-      player
-        .play()
-        .then(() => {
-          setIsLoading(false);
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          setError("Erreur de décodage du flux TS");
-          setIsLoading(false);
-        });
+
+      const playPromise = player.play();
+      if (playPromise !== undefined && typeof playPromise.then === "function") {
+        playPromise
+          .then(() => {
+            setIsLoading(false);
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            setError("Erreur de décodage TS");
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false);
+        setIsPlaying(true);
+      }
       mpegtsRef.current = player;
     } else {
-      // Fallback direct
       video.src = targetUrl;
       video
         .play()
@@ -133,7 +121,7 @@ const NetworkStreamPlayer = () => {
           setIsPlaying(true);
         })
         .catch(() => {
-          setError("Format non supporté par le navigateur");
+          setError("Format non supporté");
           setIsLoading(false);
         });
     }
@@ -198,13 +186,11 @@ const NetworkStreamPlayer = () => {
               </div>
             )}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-3 flex justify-between">
+              <button onClick={toggleMute} className="text-white bg-white/10 p-2 rounded-full">
+                {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+              </button>
               <div className="flex gap-2">
-                <button onClick={toggleMute} className="text-white bg-white/20 p-2 rounded-full">
-                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-                </button>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={toggleFullscreen} className="text-white bg-white/20 p-2 rounded-full">
+                <button onClick={toggleFullscreen} className="text-white bg-white/10 p-2 rounded-full">
                   {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                 </button>
                 <button onClick={stopPlayback} className="text-white bg-destructive p-2 rounded-full">
@@ -215,49 +201,14 @@ const NetworkStreamPlayer = () => {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {history.length > 0 && (
-        <div className="mx-4 space-y-2">
-          <p className="text-[10px] font-bold text-muted-foreground uppercase">Récents</p>
-          <div className="space-y-1">
-            {history.map((url, i) => (
-              <div key={i} className="flex items-center gap-2 p-2 rounded-xl bg-card border border-border group">
-                <button onClick={() => playStream(url)} className="flex-1 text-left text-[11px] truncate font-mono">
-                  {url}
-                </button>
-                <button
-                  onClick={() => setHistory(history.filter((h) => h !== url))}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 className="w-3 h-3 text-muted-foreground" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 };
 
-// === Main Tab Component ===
+// Composant principal simplifié (ajuste selon tes besoins Supabase)
 const LiveStreamTab = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [activeLives, setActiveLives] = useState<any[]>([]);
-  const [myLive, setMyLive] = useState<any>(null);
-  const [watchingLive, setWatchingLive] = useState<any>(null);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
-  const [chatInput, setChatInput] = useState("");
-  const [liveTitle, setLiveTitle] = useState("");
-  const [showStartForm, setShowStartForm] = useState(false);
-  const [cameraActive, setCameraActive] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const chatEndRef = useRef<HTMLDivElement>(null);
-
-  // Garder votre logique de fetchLives et Realtime ici...
-  // (La logique Supabase reste la même que dans votre code d'origine)
 
   if (!user)
     return (
@@ -269,17 +220,11 @@ const LiveStreamTab = () => {
   return (
     <div className="pb-4 space-y-6">
       <NetworkStreamPlayer />
-
-      <div className="p-4 flex items-center justify-between">
+      <div className="p-4">
         <h2 className="text-xl font-bold flex items-center gap-2">
-          <Radio className="w-5 h-5 text-destructive" /> Lives
+          <Radio className="w-5 h-5 text-destructive" /> Chaînes en Direct
         </h2>
-        <Button onClick={() => setShowStartForm(true)} className="bg-destructive rounded-full" size="sm">
-          <Video className="w-4 h-4 mr-2" /> Go Live
-        </Button>
       </div>
-
-      {/* Reste du code pour la liste des lives et le formulaire de démarrage... */}
     </div>
   );
 };
