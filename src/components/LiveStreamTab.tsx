@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Video, VideoOff, Send, X, Eye, Radio, StopCircle, Users } from "lucide-react";
+import { Video, VideoOff, Send, X, Eye, Radio, StopCircle, Users, Globe, Play, Loader2, Trash2, Plus, Link2, Volume2, VolumeX, Maximize, Minimize, SkipBack, SkipForward } from "lucide-react";
+import Hls from "hls.js";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { motion, AnimatePresence } from "framer-motion";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const STREAM_HISTORY_KEY = "vlc-stream-history";
 
 interface LiveStream {
   id: string;
