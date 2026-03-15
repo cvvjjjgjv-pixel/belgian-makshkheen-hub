@@ -672,7 +672,9 @@ const LiveStreamTab = () => {
 
   // === Main view: list of lives + go live button ===
   return (
-    <div className="pb-4">
+    <div className="pb-4 space-y-6">
+      {/* VLC-like Network Stream Player */}
+      <NetworkStreamPlayer />
       <div className="p-4 flex items-center justify-between">
         <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
           <Radio className="w-5 h-5 text-destructive" />
