@@ -23,15 +23,19 @@ export default function LiveStreamTab() {
     }
     if (videoRef.current) {
       videoRef.current.pause();
-      videoRef.current.src = "";
+      videoRef.current.removeAttribute("src");
+      videoRef.current.load();
     }
     setIsPlaying(false);
     setIsLoading(false);
   };
 
   const playStream = () => {
-    const url = streamUrl.trim();
+    let url = streamUrl.trim();
     if (!url) return;
+
+    // Nettoyage de l'URL si elle contient des espaces ou caractères bizarres
+    url = url.replace(/\s/g, "");
 
     stopPlayback();
     setIsLoading(true);
@@ -39,70 +43,104 @@ export default function LiveStreamTab() {
     const video = videoRef.current;
     if (!video) return;
 
+    // Détection forcée : si c'est du HTTP ou contient un chiffre à la fin, on utilise mpegts
+    const isTs = url.includes(".ts") || url.match(/\/\d+$/) || url.startsWith("http:");
+
     if (url.includes("m3u8")) {
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({
+          enableWorker: true,
+          xhrSetup: (xhr) => {
+            xhr.withCredentials = false;
+          },
+        });
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          (video.play() as any)?.catch(() => {});
+          video.play().catch(() => {
+            video.muted = true;
+            video.play();
+          });
           setIsLoading(false);
           setIsPlaying(true);
         });
         hlsRef.current = hls;
       }
+    } else if (isTs && (mpegts.getFeatureList() as any).isNetworkMagical) {
+      const player = mpegts.createPlayer(
+        {
+          type: "mse",
+          isLive: true,
+          url: url,
+          cors: true,
+        },
+        {
+          enableStashBuffer: false,
+          stashInitialSize: 128,
+        },
+      );
+      player.attachMediaElement(video);
+      player.load();
+      player.play().catch(() => {
+        // Fallback si le moteur MSE échoue
+        video.src = url;
+        video.play();
+      });
+      mpegtsRef.current = player;
+      setIsLoading(false);
+      setIsPlaying(true);
     } else {
-      // Pour les liens /1 ou .ts (beIN, Watania)
-      if ((mpegts.getFeatureList() as any).isNetworkMagical) {
-        const player = mpegts.createPlayer({ type: "mse", isLive: true, url: url });
-        player.attachMediaElement(video);
-        player.load();
-        (player.play() as any)?.catch(() => {});
-        mpegtsRef.current = player;
-        setIsLoading(false);
-        setIsPlaying(true);
-      }
+      video.src = url;
+      video.play();
+      setIsLoading(false);
+      setIsPlaying(true);
     }
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <Radio className="text-red-600 animate-pulse" />
-        <h1 className="text-xl font-bold font-arabic">MKACHKHINES TV</h1>
+    <div className="min-h-screen bg-[#0a0a0a] text-white p-4">
+      <div className="flex items-center gap-2 mb-6 justify-center">
+        <Radio className="text-red-600 animate-pulse w-5 h-5" />
+        <h1 className="text-xl font-bold tracking-widest text-red-600">MKAKHINES TV</h1>
       </div>
 
-      <div className="max-w-2xl mx-auto space-y-4">
-        {/* Input area */}
-        <div className="flex gap-2 bg-zinc-900 p-2 rounded-lg border border-zinc-800">
+      <div className="max-w-3xl mx-auto space-y-4">
+        <div className="flex gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800 shadow-xl">
           <input
             type="text"
             value={streamUrl}
             onChange={(e) => setStreamUrl(e.target.value)}
-            placeholder="Lien IPTV (HTTP autorisè)..."
-            className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
+            placeholder="Lien beIN, Watania ou IPTV..."
+            className="flex-1 bg-transparent px-4 py-2 text-xs outline-none text-zinc-300"
           />
-          <button onClick={playStream} className="bg-red-600 px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
-            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5" />}
+          <button
+            onClick={playStream}
+            className="bg-red-600 px-6 py-2 rounded-lg hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center min-w-[60px]"
+          >
+            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
           </button>
         </div>
 
-        {/* Player Area */}
-        <div className="relative rounded-xl overflow-hidden bg-zinc-950 aspect-video border border-zinc-800 shadow-2xl">
-          <video ref={videoRef} className="w-full h-full" playsInline controls />
+        <div className="relative rounded-2xl overflow-hidden bg-black aspect-video border border-zinc-800 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
+          <video ref={videoRef} className="w-full h-full object-contain" playsInline controls />
 
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
               <div className="text-center">
-                <Loader2 className="w-12 h-12 text-red-600 animate-spin mx-auto mb-2" />
-                <p className="text-sm font-arabic">Chargement du flux...</p>
+                <div className="relative w-16 h-16 mx-auto mb-4">
+                  <div className="absolute inset-0 border-4 border-red-600/20 rounded-full"></div>
+                  <div className="absolute inset-0 border-4 border-t-red-600 rounded-full animate-spin"></div>
+                </div>
+                <p className="text-sm font-medium text-zinc-400">Tentative de connexion...</p>
               </div>
             </div>
           )}
 
           {isPlaying && (
-            <button onClick={stopPlayback} className="absolute top-4 right-4 bg-red-600 p-2 rounded-full z-20">
+            <button
+              onClick={stopPlayback}
+              className="absolute top-4 right-4 bg-red-600/80 hover:bg-red-600 p-2 rounded-full z-30 transition-colors"
+            >
               <X className="w-4 h-4" />
             </button>
           )}
