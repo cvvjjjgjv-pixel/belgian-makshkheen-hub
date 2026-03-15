@@ -1,159 +1,104 @@
 import { useState, useRef, useEffect } from "react";
-import { X, Play, Loader2, Radio } from "lucide-react";
-import Hls from "hls.js";
-// @ts-ignore
-import mpegts from "mpegts.js";
+import { Play, Loader2, Radio, X } from "lucide-react";
+
+declare global {
+  interface Window {
+    mpegts: any;
+    Hls: any;
+  }
+}
 
 export default function LiveStreamTab() {
-  const [streamUrl, setStreamUrl] = useState("");
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+  const [url, setUrl] = useState("http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/1");
+  const [loading, setLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
-  const hlsRef = useRef<Hls | null>(null);
-  const mpegtsRef = useRef<any>(null);
-
-  const stopPlayback = () => {
-    if (hlsRef.current) {
-      hlsRef.current.destroy();
-      hlsRef.current = null;
-    }
-    if (mpegtsRef.current) {
-      mpegtsRef.current.destroy();
-      mpegtsRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.pause();
-      videoRef.current.removeAttribute("src");
-      videoRef.current.load();
-    }
-    setIsPlaying(false);
-    setIsLoading(false);
-  };
-
-  const playStream = () => {
-    let url = streamUrl.trim();
-    if (!url) return;
-    url = url.replace(/\s/g, "");
-
-    stopPlayback();
-    setIsLoading(true);
-
-    const video = videoRef.current;
-    if (!video) return;
-
-    const isTs = url.includes(".ts") || url.match(/\/\d+$/) || url.startsWith("http:");
-
-    if (url.includes("m3u8")) {
-      if (Hls.isSupported()) {
-        const hls = new Hls({
-          enableWorker: true,
-          xhrSetup: (xhr) => {
-            xhr.withCredentials = false;
-          },
-        });
-        hls.loadSource(url);
-        hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          const promise = video.play() as any;
-          if (promise && typeof promise.catch === "function") {
-            promise.catch(() => {
-              video.muted = true;
-              video.play();
-            });
-          }
-          setIsLoading(false);
-          setIsPlaying(true);
-        });
-        hlsRef.current = hls;
-      }
-    } else if (isTs && (mpegts.getFeatureList() as any).isNetworkMagical) {
-      const player = mpegts.createPlayer(
-        {
-          type: "mse",
-          isLive: true,
-          url: url,
-          cors: true,
-        },
-        {
-          enableStashBuffer: false,
-          stashInitialSize: 128,
-        },
-      );
-      player.attachMediaElement(video);
-      player.load();
-
-      const promise = player.play() as any;
-      if (promise && typeof promise.catch === "function") {
-        promise.catch(() => {
-          video.src = url;
-          video.play();
-        });
-      }
-
-      mpegtsRef.current = player;
-      setIsLoading(false);
-      setIsPlaying(true);
-    } else {
-      video.src = url;
-      video.play();
-      setIsLoading(false);
-      setIsPlaying(true);
-    }
-  };
+  const playerRef = useRef<any>(null);
 
   useEffect(() => {
-    return () => stopPlayback();
+    // Chargement forcé des moteurs
+    const scripts = [
+      "https://cdn.jsdelivr.net/npm/mpegts.js@latest/dist/mpegts.min.js",
+      "https://cdn.jsdelivr.net/npm/hls.js@latest",
+    ];
+    scripts.forEach((src) => {
+      const s = document.createElement("script");
+      s.src = src;
+      document.head.appendChild(s);
+    });
   }, []);
 
+  const play = () => {
+    if (!videoRef.current || !window.mpegts) return;
+    setLoading(true);
+
+    if (playerRef.current) {
+      playerRef.current.destroy();
+    }
+
+    // On force le moteur MPEGTS (VLC Core)
+    const player = window.mpegts.createPlayer(
+      {
+        type: "mse",
+        isLive: true,
+        url: url,
+        cors: true,
+      },
+      {
+        enableStashBuffer: false, // Pas de délai
+        stashInitialSize: 128,
+      },
+    );
+
+    player.attachMediaElement(videoRef.current);
+    player.load();
+    player
+      .play()
+      .then(() => {
+        setLoading(false);
+      })
+      .catch(() => {
+        // Si ça échoue, on tente le lien direct
+        videoRef.current!.src = url;
+        videoRef.current!.play();
+        setLoading(false);
+      });
+
+    playerRef.current = player;
+  };
+
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white p-4">
-      <div className="flex items-center gap-2 mb-6 justify-center">
-        <Radio className="text-red-600 animate-pulse w-5 h-5" />
-        <h1 className="text-xl font-bold tracking-widest text-red-600 font-serif">MKAKHINES TV</h1>
+    <div className="min-h-screen bg-black text-white p-6 flex flex-col items-center">
+      <div className="flex items-center gap-2 mb-8">
+        <Radio className="text-red-600 animate-pulse" />
+        <h1 className="text-2xl font-bold italic text-red-600">MKAKHINES TV</h1>
       </div>
 
-      <div className="max-w-3xl mx-auto space-y-4">
-        <div className="flex gap-2 bg-zinc-900 p-2 rounded-xl border border-zinc-800 shadow-xl">
+      <div className="w-full max-w-2xl space-y-4">
+        <div className="flex gap-2 bg-zinc-900 p-2 rounded-xl border border-white/5">
           <input
-            type="text"
-            value={streamUrl}
-            onChange={(e) => setStreamUrl(e.target.value)}
-            placeholder="Lien beIN, Watania ou IPTV..."
-            className="flex-1 bg-transparent px-4 py-2 text-xs outline-none text-zinc-300"
+            className="flex-1 bg-transparent px-4 py-2 text-xs outline-none"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
           />
-          <button
-            onClick={playStream}
-            className="bg-red-600 px-6 py-2 rounded-lg hover:bg-red-700 active:scale-95 transition-all flex items-center justify-center min-w-[60px]"
-          >
-            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
+          <button onClick={play} className="bg-red-600 p-3 rounded-lg hover:bg-red-700 transition-all">
+            {loading ? <Loader2 className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5 fill-current" />}
           </button>
         </div>
 
-        <div className="relative rounded-2xl overflow-hidden bg-black aspect-video border border-zinc-800 shadow-[0_0_50px_rgba(220,38,38,0.1)]">
-          <video ref={videoRef} className="w-full h-full object-contain" playsInline controls />
-
-          {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/80 z-20">
-              <div className="text-center">
-                <div className="relative w-16 h-16 mx-auto mb-4">
-                  <div className="absolute inset-0 border-4 border-red-600/20 rounded-full"></div>
-                  <div className="absolute inset-0 border-4 border-t-red-600 rounded-full animate-spin"></div>
-                </div>
-                <p className="text-sm font-medium text-zinc-400">Mkakhines Connection...</p>
-              </div>
+        <div className="relative aspect-video bg-zinc-950 rounded-2xl overflow-hidden border border-white/5 shadow-2xl">
+          <video ref={videoRef} className="w-full h-full" controls playsInline />
+          {loading && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
+              <Loader2 className="w-10 h-10 text-red-600 animate-spin mb-2" />
+              <p className="text-xs font-bold text-zinc-400">CONNEXION AU FLUX...</p>
             </div>
-          )}
-
-          {isPlaying && (
-            <button
-              onClick={stopPlayback}
-              className="absolute top-4 right-4 bg-red-600/80 hover:bg-red-600 p-2 rounded-full z-30 transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
           )}
         </div>
       </div>
+
+      <p className="mt-6 text-[10px] text-zinc-600 uppercase tracking-widest font-bold">
+        localhost:8080 • Mkakhines Streaming Center
+      </p>
     </div>
   );
 }
