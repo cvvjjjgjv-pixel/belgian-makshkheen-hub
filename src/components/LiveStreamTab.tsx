@@ -69,6 +69,195 @@ const NetworkStreamPlayer = () => {
     setError("");
   };
 
+  const abortRef = useRef<AbortController | null>(null);
+
+  const playViaProxy = (targetUrl: string, video: HTMLVideoElement, timeout: ReturnType<typeof setTimeout>, playVideo: () => void) => {
+    const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+    
+    // First, do a probe fetch to check content type
+    fetch(proxyUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: targetUrl })
+    }).then(r => {
+      if (!r.ok) throw new Error('Proxy error');
+      const contentType = r.headers.get('content-type') || '';
+      
+      // If server returns m3u8, try HLS
+      if (contentType.includes('mpegurl') || contentType.includes('m3u8')) {
+        return r.text().then(text => {
+          const blob = new Blob([text], { type: 'application/vnd.apple.mpegurl' });
+          const blobUrl = URL.createObjectURL(blob);
+          if (Hls.isSupported()) {
+            const hls = new Hls({
+              enableWorker: true,
+              lowLatencyMode: true,
+              xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
+                xhr.withCredentials = false;
+                xhr.open('POST', proxyUrl, true);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                const origSend = xhr.send.bind(xhr);
+                xhr.send = () => origSend(JSON.stringify({ url: xhrUrl }));
+              },
+            });
+            hls.loadSource(blobUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => {
+              clearTimeout(timeout);
+              setIsLoading(false);
+              setIsPlaying(true);
+              playVideo();
+            });
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (data.fatal) {
+                clearTimeout(timeout);
+                setIsLoading(false);
+                setError("Impossible de lire ce flux HLS");
+                hls.destroy();
+              }
+            });
+            hlsRef.current = hls;
+          } else {
+            video.src = blobUrl;
+            video.addEventListener("loadedmetadata", () => {
+              clearTimeout(timeout); setIsLoading(false); setIsPlaying(true);
+            }, { once: true });
+            playVideo();
+          }
+        });
+      }
+      
+      // For live TS streams - use MSE (MediaSource Extensions) for streaming playback
+      if ('MediaSource' in window && (contentType.includes('video/mp2t') || contentType.includes('octet-stream') || targetUrl.match(/\/\d+$/))) {
+        // Try streaming via MSE
+        const reader = r.body?.getReader();
+        if (!reader) throw new Error('No reader');
+        
+        const mediaSource = new MediaSource();
+        video.src = URL.createObjectURL(mediaSource);
+        
+        mediaSource.addEventListener('sourceopen', () => {
+          let sourceBuffer: SourceBuffer;
+          try {
+            sourceBuffer = mediaSource.addSourceBuffer('video/mp2t; codecs="avc1.42E01E,mp4a.40.2"');
+          } catch {
+            try {
+              sourceBuffer = mediaSource.addSourceBuffer('video/mp2t');
+            } catch {
+              // MSE doesn't support TS natively in most browsers
+              // Fallback to blob approach
+              reader.cancel();
+              fallbackBlobPlay(targetUrl, video, timeout, playVideo);
+              return;
+            }
+          }
+          
+          const queue: Uint8Array[] = [];
+          let appending = false;
+          
+          const appendNext = () => {
+            if (queue.length > 0 && !appending && !sourceBuffer.updating) {
+              appending = true;
+              const chunk = queue.shift()!;
+              try {
+                sourceBuffer.appendBuffer(chunk.buffer as ArrayBuffer);
+              } catch {
+                appending = false;
+              }
+            }
+          };
+          
+          sourceBuffer.addEventListener('updateend', () => {
+            appending = false;
+            if (!isPlaying) {
+              clearTimeout(timeout);
+              setIsLoading(false);
+              setIsPlaying(true);
+              playVideo();
+            }
+            appendNext();
+          });
+          
+          const pump = (): Promise<void> => {
+            return reader.read().then(({ done, value }) => {
+              if (done) {
+                if (mediaSource.readyState === 'open') mediaSource.endOfStream();
+                return;
+              }
+              queue.push(value);
+              appendNext();
+              return pump();
+            });
+          };
+          
+          pump().catch(() => {});
+        });
+        
+        return;
+      }
+
+      // Fallback: Raw stream as blob (for MP4, WebM, etc.)
+      return r.blob().then(blob => {
+        const blobUrl = URL.createObjectURL(blob);
+        video.src = blobUrl;
+        video.addEventListener("loadedmetadata", () => {
+          clearTimeout(timeout); setIsLoading(false); setIsPlaying(true);
+        }, { once: true });
+        video.addEventListener("error", () => {
+          clearTimeout(timeout); setIsLoading(false); setError("Format non supporté par le navigateur");
+        }, { once: true });
+        playVideo();
+      });
+    }).catch(() => {
+      clearTimeout(timeout); setIsLoading(false); setError("Erreur réseau");
+    });
+  };
+
+  // Fallback: try to convert TS to playable blob using hls.js trick
+  const fallbackBlobPlay = (targetUrl: string, video: HTMLVideoElement, timeout: ReturnType<typeof setTimeout>, playVideo: () => void) => {
+    const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+    // Try wrapping as a single-segment HLS playlist
+    const fakeM3u8 = `#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:30\n#EXTINF:30.0,\n${targetUrl}\n#EXT-X-ENDLIST`;
+    const blob = new Blob([fakeM3u8], { type: 'application/vnd.apple.mpegurl' });
+    const blobUrl = URL.createObjectURL(blob);
+    
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
+          // Don't proxy the blob URL itself
+          if (xhrUrl.startsWith('blob:')) return;
+          xhr.withCredentials = false;
+          xhr.open('POST', proxyUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          const origSend = xhr.send.bind(xhr);
+          xhr.send = () => origSend(JSON.stringify({ url: xhrUrl }));
+        },
+      });
+      hls.loadSource(blobUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        clearTimeout(timeout);
+        setIsLoading(false);
+        setIsPlaying(true);
+        playVideo();
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          clearTimeout(timeout);
+          setIsLoading(false);
+          setError("Ce flux live nécessite VLC ou un lecteur compatible TS");
+          hls.destroy();
+        }
+      });
+      hlsRef.current = hls;
+    } else {
+      clearTimeout(timeout);
+      setIsLoading(false);
+      setError("Format TS non supporté dans ce navigateur");
+    }
+  };
+
   const playStream = (url?: string) => {
     const targetUrl = (url || streamUrl).trim();
     if (!targetUrl) { toast.error("Colle un lien de flux réseau"); return; }
@@ -85,7 +274,7 @@ const NetworkStreamPlayer = () => {
     const timeout = setTimeout(() => {
       setIsLoading(false);
       setError("Timeout - Le flux ne répond pas");
-    }, 20000);
+    }, 25000);
 
     const playVideo = () => {
       video.play().catch(() => {
@@ -95,8 +284,10 @@ const NetworkStreamPlayer = () => {
       });
     };
 
-    // All streams go through proxy to bypass CORS/security
-    if (Hls.isSupported()) {
+    const isHlsUrl = targetUrl.includes('.m3u8') || targetUrl.includes('m3u8');
+
+    if (isHlsUrl && Hls.isSupported()) {
+      // HLS stream - use hls.js with proxy
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
@@ -106,9 +297,7 @@ const NetworkStreamPlayer = () => {
           xhr.open('POST', proxyUrl, true);
           xhr.setRequestHeader('Content-Type', 'application/json');
           const origSend = xhr.send.bind(xhr);
-          xhr.send = () => {
-            origSend(JSON.stringify({ url: xhrUrl }));
-          };
+          xhr.send = () => origSend(JSON.stringify({ url: xhrUrl }));
         },
       });
       hls.loadSource(targetUrl);
@@ -128,55 +317,15 @@ const NetworkStreamPlayer = () => {
           } else {
             clearTimeout(timeout);
             setIsLoading(false);
-            setError("Impossible de lire ce flux");
+            setError("Impossible de lire ce flux HLS");
             hls.destroy();
           }
         }
       });
       hlsRef.current = hls;
-    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
-      const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
-      fetch(proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl })
-      }).then(r => r.blob()).then(blob => {
-        video.src = URL.createObjectURL(blob);
-        video.addEventListener("loadedmetadata", () => {
-          clearTimeout(timeout);
-          setIsLoading(false);
-          setIsPlaying(true);
-        }, { once: true });
-        playVideo();
-      }).catch(() => {
-        clearTimeout(timeout);
-        setIsLoading(false);
-        setError("Erreur de chargement");
-      });
     } else {
-      const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
-      fetch(proxyUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url: targetUrl })
-      }).then(r => r.blob()).then(blob => {
-        video.src = URL.createObjectURL(blob);
-        video.addEventListener("loadedmetadata", () => {
-          clearTimeout(timeout);
-          setIsLoading(false);
-          setIsPlaying(true);
-        }, { once: true });
-        video.addEventListener("error", () => {
-          clearTimeout(timeout);
-          setIsLoading(false);
-          setError("Format non supporté");
-        }, { once: true });
-        playVideo();
-      }).catch(() => {
-        clearTimeout(timeout);
-        setIsLoading(false);
-        setError("Erreur réseau");
-      });
+      // Non-HLS or unknown - fetch via proxy first, detect format
+      playViaProxy(targetUrl, video, timeout, playVideo);
     }
   };
 
