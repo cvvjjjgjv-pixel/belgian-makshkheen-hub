@@ -6,29 +6,18 @@ const corsHeaders = {
 };
 
 function resolveRelativeUrls(manifest: string, baseUrl: string): string {
-  // Get base path (remove filename from URL)
   const lastSlash = baseUrl.lastIndexOf('/');
   const basePath = lastSlash >= 0 ? baseUrl.substring(0, lastSlash + 1) : baseUrl + '/';
-  
-  // Get origin for protocol-relative URLs
   const urlObj = new URL(baseUrl);
   const origin = urlObj.origin;
 
   return manifest.split('\n').map(line => {
     const trimmed = line.trim();
-    // Skip empty lines, comments, and already-absolute URLs
     if (!trimmed || trimmed.startsWith('#') || trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
       return line;
     }
-    // Protocol-relative
-    if (trimmed.startsWith('//')) {
-      return urlObj.protocol + trimmed;
-    }
-    // Absolute path
-    if (trimmed.startsWith('/')) {
-      return origin + trimmed;
-    }
-    // Relative path - resolve against base
+    if (trimmed.startsWith('//')) return urlObj.protocol + trimmed;
+    if (trimmed.startsWith('/')) return origin + trimmed;
     return basePath + trimmed;
   }).join('\n');
 }
@@ -39,7 +28,7 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json();
+    const { url, stream } = await req.json();
     
     if (!url) {
       return new Response(JSON.stringify({ error: 'Missing url parameter' }), {
@@ -48,7 +37,6 @@ serve(async (req) => {
       });
     }
 
-    // Determine appropriate headers based on URL
     const urlObj = new URL(url);
     const headers: Record<string, string> = {
       'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -64,7 +52,6 @@ serve(async (req) => {
       headers['Accept'] = 'application/vnd.apple.mpegurl, */*';
     }
 
-    // Fetch the upstream URL
     const response = await fetch(url, {
       headers,
       redirect: 'follow',
@@ -87,9 +74,7 @@ serve(async (req) => {
     
     if (isManifest) {
       const text = await response.text();
-      // Only process if it looks like an m3u8
       if (text.trimStart().startsWith('#EXTM3U') || text.includes('#EXT-X-')) {
-        // Use final URL after redirects
         const finalUrl = response.url || url;
         const rewritten = resolveRelativeUrls(text, finalUrl);
         return new Response(rewritten, {
@@ -101,6 +86,19 @@ serve(async (req) => {
           },
         });
       }
+    }
+
+    // For streaming/live content (TS streams etc.), stream the response body directly
+    if (stream && response.body) {
+      return new Response(response.body, {
+        status: 200,
+        headers: {
+          ...corsHeaders,
+          'Content-Type': contentType,
+          'Cache-Control': 'no-cache',
+          'Transfer-Encoding': 'chunked',
+        },
+      });
     }
 
     const body = await response.arrayBuffer();
