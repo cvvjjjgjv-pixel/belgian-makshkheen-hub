@@ -3,7 +3,6 @@ import { Video, X, Eye, Radio, Globe, Play, Loader2, Trash2, Volume2, VolumeX, M
 import Hls from "hls.js";
 // @ts-ignore
 import mpegts from "mpegts.js";
-import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
@@ -81,7 +80,8 @@ const NetworkStreamPlayer = () => {
       hls.loadSource(targetUrl);
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
-        video.play().catch(() => {});
+        const p = video.play() as any;
+        if (p && p.then) p.catch(() => {});
         setIsLoading(false);
         setIsPlaying(true);
       });
@@ -96,8 +96,8 @@ const NetworkStreamPlayer = () => {
       player.attachMediaElement(video);
       player.load();
 
-      const playPromise = player.play();
-      if (playPromise !== undefined && typeof playPromise.then === "function") {
+      const playPromise = player.play() as any;
+      if (playPromise && typeof playPromise.then === "function") {
         playPromise
           .then(() => {
             setIsLoading(false);
@@ -114,16 +114,21 @@ const NetworkStreamPlayer = () => {
       mpegtsRef.current = player;
     } else {
       video.src = targetUrl;
-      video
-        .play()
-        .then(() => {
-          setIsLoading(false);
-          setIsPlaying(true);
-        })
-        .catch(() => {
-          setError("Format non supporté");
-          setIsLoading(false);
-        });
+      const playPromise = video.play() as any;
+      if (playPromise && typeof playPromise.then === "function") {
+        playPromise
+          .then(() => {
+            setIsLoading(false);
+            setIsPlaying(true);
+          })
+          .catch(() => {
+            setError("Format non supporté");
+            setIsLoading(false);
+          });
+      } else {
+        setIsLoading(false);
+        setIsPlaying(true);
+      }
     }
   };
 
@@ -150,9 +155,9 @@ const NetworkStreamPlayer = () => {
       <div className="mx-4 p-4 rounded-2xl bg-card border border-border shadow-sm">
         <div className="flex items-center gap-2 mb-3">
           <Globe className="w-5 h-5 text-accent" />
-          <h3 className="text-sm font-bold">VLC Network Player</h3>
+          <h3 className="text-sm font-bold text-foreground">VLC Network Player</h3>
           <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent font-bold uppercase">
-            TS/HLS
+            IPTV / TS
           </span>
         </div>
         <div className="flex gap-2">
@@ -182,18 +187,24 @@ const NetworkStreamPlayer = () => {
             {isLoading && (
               <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60">
                 <Loader2 className="w-8 h-8 text-accent animate-spin mb-2" />
-                <span className="text-white text-[10px]">Chargement du flux...</span>
+                <span className="text-white text-[10px]">Connexion...</span>
               </div>
             )}
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-3 flex justify-between">
-              <button onClick={toggleMute} className="text-white bg-white/10 p-2 rounded-full">
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 p-3 flex justify-between items-center">
+              <button onClick={toggleMute} className="text-white bg-white/10 p-2 rounded-full hover:bg-white/20">
                 {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
               </button>
               <div className="flex gap-2">
-                <button onClick={toggleFullscreen} className="text-white bg-white/10 p-2 rounded-full">
+                <button
+                  onClick={toggleFullscreen}
+                  className="text-white bg-white/10 p-2 rounded-full hover:bg-white/20"
+                >
                   {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
                 </button>
-                <button onClick={stopPlayback} className="text-white bg-destructive p-2 rounded-full">
+                <button
+                  onClick={stopPlayback}
+                  className="text-white bg-destructive p-2 rounded-full hover:bg-destructive/80"
+                >
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -205,7 +216,6 @@ const NetworkStreamPlayer = () => {
   );
 };
 
-// Composant principal simplifié (ajuste selon tes besoins Supabase)
 const LiveStreamTab = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -220,9 +230,9 @@ const LiveStreamTab = () => {
   return (
     <div className="pb-4 space-y-6">
       <NetworkStreamPlayer />
-      <div className="p-4">
-        <h2 className="text-xl font-bold flex items-center gap-2">
-          <Radio className="w-5 h-5 text-destructive" /> Chaînes en Direct
+      <div className="px-4">
+        <h2 className="text-xl font-bold flex items-center gap-2 text-foreground">
+          <Radio className="w-5 h-5 text-destructive" /> Chaînes TV
         </h2>
       </div>
     </div>
