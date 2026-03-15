@@ -160,7 +160,7 @@ const NetworkStreamPlayer = () => {
               appending = true;
               const chunk = queue.shift()!;
               try {
-                sourceBuffer.appendBuffer(chunk);
+                sourceBuffer.appendBuffer(chunk.buffer as ArrayBuffer);
               } catch {
                 appending = false;
               }
