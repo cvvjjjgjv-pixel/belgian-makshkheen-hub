@@ -3,8 +3,6 @@ import { X, Play, Loader2, Radio } from "lucide-react";
 import Hls from "hls.js";
 // @ts-ignore
 import mpegts from "mpegts.js";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 
 export default function LiveStreamTab() {
   const [streamUrl, setStreamUrl] = useState("");
@@ -47,26 +45,19 @@ export default function LiveStreamTab() {
         hls.loadSource(url);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
-          const p = video.play() as any;
-          if (p && typeof p.catch === "function") p.catch(() => {});
+          (video.play() as any)?.catch(() => {});
           setIsLoading(false);
           setIsPlaying(true);
         });
         hlsRef.current = hls;
       }
     } else {
-      // Correction Erreur isNetworkMagical
+      // Pour les liens /1 ou .ts (beIN, Watania)
       if ((mpegts.getFeatureList() as any).isNetworkMagical) {
         const player = mpegts.createPlayer({ type: "mse", isLive: true, url: url });
         player.attachMediaElement(video);
         player.load();
-
-        // Correction Erreur .catch()
-        const playPromise = player.play() as any;
-        if (playPromise && typeof playPromise.catch === "function") {
-          playPromise.catch((e: any) => console.error("Erreur Play TS:", e));
-        }
-
+        (player.play() as any)?.catch(() => {});
         mpegtsRef.current = player;
         setIsLoading(false);
         setIsPlaying(true);
@@ -74,47 +65,44 @@ export default function LiveStreamTab() {
     }
   };
 
-  useEffect(() => {
-    return () => stopPlayback();
-  }, []);
-
   return (
-    <div className="min-h-screen bg-black text-white p-4 pb-24">
+    <div className="min-h-screen bg-black text-white p-4">
+      {/* Header */}
       <div className="flex items-center gap-2 mb-6">
         <Radio className="text-red-600 animate-pulse" />
-        <h1 className="text-xl font-bold font-arabic uppercase tracking-tighter">Mkakhines TV</h1>
+        <h1 className="text-xl font-bold font-arabic">MKACHKHINES TV</h1>
       </div>
 
-      <div className="space-y-4">
-        <div className="flex gap-2 bg-zinc-900 p-3 rounded-xl border border-zinc-800 shadow-lg">
-          <Input
+      <div className="max-w-2xl mx-auto space-y-4">
+        {/* Input area */}
+        <div className="flex gap-2 bg-zinc-900 p-2 rounded-lg border border-zinc-800">
+          <input
+            type="text"
             value={streamUrl}
             onChange={(e) => setStreamUrl(e.target.value)}
-            placeholder="Lien IPTV (HLS ou TS)"
-            className="bg-black border-zinc-700 text-xs focus-visible:ring-red-600"
+            placeholder="Lien IPTV (HTTP autorisè)..."
+            className="flex-1 bg-transparent px-3 py-2 text-sm outline-none"
           />
-          <Button onClick={playStream} className="bg-red-600 hover:bg-red-700 shadow-md">
-            {isLoading ? <Loader2 className="animate-spin" /> : <Play />}
-          </Button>
+          <button onClick={playStream} className="bg-red-600 px-4 py-2 rounded-md hover:bg-red-700 transition-colors">
+            {isLoading ? <Loader2 className="animate-spin w-5 h-5" /> : <Play className="w-5 h-5" />}
+          </button>
         </div>
 
-        <div className="relative rounded-2xl overflow-hidden bg-zinc-950 aspect-video border border-zinc-800 shadow-2xl group">
+        {/* Player Area */}
+        <div className="relative rounded-xl overflow-hidden bg-zinc-950 aspect-video border border-zinc-800 shadow-2xl">
           <video ref={videoRef} className="w-full h-full" playsInline controls />
 
           {isLoading && (
-            <div className="absolute inset-0 flex items-center justify-center bg-black/60 z-10">
+            <div className="absolute inset-0 flex items-center justify-center bg-black/70">
               <div className="text-center">
-                <Loader2 className="w-10 h-10 text-red-600 animate-spin mx-auto mb-2" />
-                <p className="text-xs text-zinc-400 font-arabic">Connexion au serveur...</p>
+                <Loader2 className="w-12 h-12 text-red-600 animate-spin mx-auto mb-2" />
+                <p className="text-sm font-arabic">Chargement du flux...</p>
               </div>
             </div>
           )}
 
           {isPlaying && (
-            <button
-              onClick={stopPlayback}
-              className="absolute top-4 right-4 bg-red-600 p-2 rounded-full shadow-lg z-50 hover:scale-110 transition-transform"
-            >
+            <button onClick={stopPlayback} className="absolute top-4 right-4 bg-red-600 p-2 rounded-full z-20">
               <X className="w-4 h-4" />
             </button>
           )}
