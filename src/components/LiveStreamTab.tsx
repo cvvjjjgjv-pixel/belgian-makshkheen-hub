@@ -32,6 +32,283 @@ interface LiveChatMsg {
   author_name?: string;
 }
 
+// === VLC-like Network Stream Player ===
+const NetworkStreamPlayer = () => {
+  const [streamUrl, setStreamUrl] = useState("");
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isMuted, setIsMuted] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [history, setHistory] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem(STREAM_HISTORY_KEY) || "[]");
+    } catch { return []; }
+  });
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const hlsRef = useRef<Hls | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const saveHistory = (url: string) => {
+    const updated = [url, ...history.filter(h => h !== url)].slice(0, 15);
+    setHistory(updated);
+    localStorage.setItem(STREAM_HISTORY_KEY, JSON.stringify(updated));
+  };
+
+  const removeFromHistory = (url: string) => {
+    const updated = history.filter(h => h !== url);
+    setHistory(updated);
+    localStorage.setItem(STREAM_HISTORY_KEY, JSON.stringify(updated));
+  };
+
+  const stopPlayback = () => {
+    if (hlsRef.current) { hlsRef.current.destroy(); hlsRef.current = null; }
+    if (videoRef.current) { videoRef.current.src = ""; videoRef.current.load(); }
+    setIsPlaying(false);
+    setIsLoading(false);
+    setError("");
+  };
+
+  const playStream = (url?: string) => {
+    const targetUrl = (url || streamUrl).trim();
+    if (!targetUrl) { toast.error("Colle un lien de flux réseau"); return; }
+
+    stopPlayback();
+    setStreamUrl(targetUrl);
+    setIsLoading(true);
+    setError("");
+    saveHistory(targetUrl);
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    const timeout = setTimeout(() => {
+      setIsLoading(false);
+      setError("Timeout - Le flux ne répond pas");
+    }, 20000);
+
+    const playVideo = () => {
+      video.play().catch(() => {
+        video.muted = true;
+        setIsMuted(true);
+        video.play().catch(() => {});
+      });
+    };
+
+    // All streams go through proxy to bypass CORS/security
+    if (Hls.isSupported()) {
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        xhrSetup: (xhr: XMLHttpRequest, xhrUrl: string) => {
+          xhr.withCredentials = false;
+          const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+          xhr.open('POST', proxyUrl, true);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          const origSend = xhr.send.bind(xhr);
+          xhr.send = () => {
+            origSend(JSON.stringify({ url: xhrUrl }));
+          };
+        },
+      });
+      hls.loadSource(targetUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        clearTimeout(timeout);
+        setIsLoading(false);
+        setIsPlaying(true);
+        playVideo();
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            hls.startLoad();
+          } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hls.recoverMediaError();
+          } else {
+            clearTimeout(timeout);
+            setIsLoading(false);
+            setError("Impossible de lire ce flux");
+            hls.destroy();
+          }
+        }
+      });
+      hlsRef.current = hls;
+    } else if (video.canPlayType("application/vnd.apple.mpegurl")) {
+      const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+      fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl })
+      }).then(r => r.blob()).then(blob => {
+        video.src = URL.createObjectURL(blob);
+        video.addEventListener("loadedmetadata", () => {
+          clearTimeout(timeout);
+          setIsLoading(false);
+          setIsPlaying(true);
+        }, { once: true });
+        playVideo();
+      }).catch(() => {
+        clearTimeout(timeout);
+        setIsLoading(false);
+        setError("Erreur de chargement");
+      });
+    } else {
+      const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
+      fetch(proxyUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: targetUrl })
+      }).then(r => r.blob()).then(blob => {
+        video.src = URL.createObjectURL(blob);
+        video.addEventListener("loadedmetadata", () => {
+          clearTimeout(timeout);
+          setIsLoading(false);
+          setIsPlaying(true);
+        }, { once: true });
+        video.addEventListener("error", () => {
+          clearTimeout(timeout);
+          setIsLoading(false);
+          setError("Format non supporté");
+        }, { once: true });
+        playVideo();
+      }).catch(() => {
+        clearTimeout(timeout);
+        setIsLoading(false);
+        setError("Erreur réseau");
+      });
+    }
+  };
+
+  const toggleMute = () => {
+    if (videoRef.current) {
+      videoRef.current.muted = !videoRef.current.muted;
+      setIsMuted(videoRef.current.muted);
+    }
+  };
+
+  const toggleFullscreen = () => {
+    if (!containerRef.current) return;
+    if (document.fullscreenElement) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    } else {
+      containerRef.current.requestFullscreen().catch(() => {});
+      setIsFullscreen(true);
+    }
+  };
+
+  useEffect(() => {
+    return () => { if (hlsRef.current) hlsRef.current.destroy(); };
+  }, []);
+
+  return (
+    <div className="space-y-4">
+      {/* URL Input */}
+      <div className="mx-4 p-4 rounded-2xl bg-card border border-border space-y-3">
+        <div className="flex items-center gap-2 mb-2">
+          <Globe className="w-5 h-5 text-accent" />
+          <h3 className="text-sm font-bold text-foreground">Lecteur Flux Réseau</h3>
+          <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/20 text-accent font-semibold">VLC</span>
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={streamUrl}
+            onChange={(e) => setStreamUrl(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && playStream()}
+            placeholder="Coller un lien flux (m3u8, ts, iptv...)"
+            className="flex-1 text-xs bg-secondary border-border"
+          />
+          <Button
+            onClick={() => playStream()}
+            disabled={isLoading}
+            size="sm"
+            className="bg-accent text-accent-foreground hover:bg-accent/90 shrink-0"
+          >
+            {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Play className="w-4 h-4" />}
+          </Button>
+        </div>
+        {error && (
+          <p className="text-xs text-destructive flex items-center gap-1">
+            <X className="w-3 h-3" /> {error}
+          </p>
+        )}
+      </div>
+
+      {/* Video Player */}
+      <AnimatePresence>
+        {(isPlaying || isLoading) && (
+          <motion.div
+            ref={containerRef}
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="mx-4 rounded-2xl overflow-hidden bg-black relative"
+          >
+            <video
+              ref={videoRef}
+              className="w-full aspect-video bg-black"
+              controls={false}
+              autoPlay
+              playsInline
+            />
+            {isLoading && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/60">
+                <div className="flex flex-col items-center gap-2">
+                  <Loader2 className="w-8 h-8 text-accent animate-spin" />
+                  <span className="text-white text-xs">Connexion au flux...</span>
+                </div>
+              </div>
+            )}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <button onClick={toggleMute} className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30">
+                  {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+                </button>
+                <span className="text-[10px] text-white/70 font-mono truncate max-w-[200px]">{streamUrl}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <button onClick={toggleFullscreen} className="w-8 h-8 rounded-full bg-white/20 text-white flex items-center justify-center hover:bg-white/30">
+                  {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                </button>
+                <button onClick={stopPlayback} className="w-8 h-8 rounded-full bg-destructive/80 text-white flex items-center justify-center hover:bg-destructive">
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* History */}
+      {history.length > 0 && (
+        <div className="mx-4 space-y-2">
+          <p className="text-xs font-bold text-muted-foreground px-1">Historique des flux</p>
+          <div className="space-y-1 max-h-48 overflow-y-auto">
+            {history.map((url, i) => (
+              <div key={i} className="flex items-center gap-2 p-2 rounded-xl bg-card border border-border group hover:border-accent/50 transition-colors">
+                <button
+                  onClick={() => { setStreamUrl(url); playStream(url); }}
+                  className="flex-1 min-w-0 flex items-center gap-2 text-left"
+                >
+                  <Play className="w-3.5 h-3.5 text-accent shrink-0" />
+                  <span className="text-[11px] text-foreground truncate font-mono">{url}</span>
+                </button>
+                <button
+                  onClick={() => removeFromHistory(url)}
+                  className="w-6 h-6 rounded-full text-muted-foreground hover:text-destructive hover:bg-destructive/10 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
 const LiveStreamTab = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
