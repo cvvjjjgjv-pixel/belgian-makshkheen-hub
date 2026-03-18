@@ -5,7 +5,7 @@ const config: CapacitorConfig = {
   appName: 'Mkachkhines Belgique',
   webDir: 'dist',
   server: {
-    url: 'https://277dd843-618e-46cd-bcdc-cc84870532b3.lovableproject.com?forceHideBadge=true',
+    url: 'https://belgian-makshkheen-hub.lovable.app?forceHideBadge=true',
     cleartext: true,
   },
   plugins: {
@@ -20,6 +20,11 @@ const config: CapacitorConfig = {
       splashFullScreen: true,
       splashImmersive: true,
     },
+  },
+  android: {
+    allowMixedContent: true,
+    captureInput: true,
+    webContentsDebuggingEnabled: false,
   },
 };
 
