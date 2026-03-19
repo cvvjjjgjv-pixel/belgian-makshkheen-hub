@@ -383,10 +383,19 @@ const TVTab = () => {
         }
       }
 
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (session?.access_token) {
+        authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       // 1. Get categories
       const catRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...config, action: 'get_live_categories' }),
       });
       const categories: any[] = catRes.ok ? await catRes.json() : [];
@@ -398,7 +407,7 @@ const TVTab = () => {
       // 2. Get all live streams
       const streamsRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...config, action: 'get_live_streams' }),
       });
       const streams: any[] = streamsRes.ok ? await streamsRes.json() : [];
