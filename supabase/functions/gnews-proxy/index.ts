@@ -1,15 +1,34 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
-// Per-query cache
 const cache = new Map<string, { articles: any[]; timestamp: number }>();
 const CACHE_TTL = 30 * 60 * 1000;
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
+  }
+
+  // Verify JWT
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
   const GNEWS_API_KEY = Deno.env.get('GNEWS_API_KEY');
@@ -22,15 +41,13 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const lang = body.lang || 'fr';
-    const max = body.max || 10;
-    const query = body.q || 'sport tunisie OR football tunisie';
+    const lang = String(body.lang || 'fr').slice(0, 5);
+    const max = Math.min(Math.max(1, Number(body.max) || 10), 50);
+    const query = String(body.q || 'sport tunisie OR football tunisie').slice(0, 200);
 
-    // Check cache for this query
     const cacheKey = `${query}:${lang}:${max}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('Cache hit for:', cacheKey);
       return new Response(JSON.stringify({ articles: cached.articles, totalArticles: cached.articles.length, cached: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -38,7 +55,6 @@ Deno.serve(async (req) => {
 
     let articles: any[] = [];
 
-    // Search with user query
     try {
       const url = new URL('https://gnews.io/api/v4/search');
       url.searchParams.set('q', query);
@@ -46,10 +62,8 @@ Deno.serve(async (req) => {
       url.searchParams.set('max', String(max));
       url.searchParams.set('apikey', GNEWS_API_KEY);
 
-      console.log('Searching for:', query);
       const res = await fetch(url.toString());
       const data = await res.json();
-      console.log('Search result:', data.totalArticles ?? 0, 'articles');
 
       if (res.ok && data.articles?.length > 0) {
         articles = data.articles;
@@ -58,7 +72,6 @@ Deno.serve(async (req) => {
       console.error('Search failed:', e);
     }
 
-    // Fallback: top-headlines sports Tunisia
     if (articles.length === 0) {
       try {
         const url = new URL('https://gnews.io/api/v4/top-headlines');
@@ -68,7 +81,6 @@ Deno.serve(async (req) => {
         url.searchParams.set('max', String(max));
         url.searchParams.set('apikey', GNEWS_API_KEY);
 
-        console.log('Fallback: top-headlines sports/tn');
         const res = await fetch(url.toString());
         const data = await res.json();
 
@@ -80,7 +92,6 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Cache results
     if (articles.length > 0) {
       cache.set(cacheKey, { articles, timestamp: Date.now() });
     }
