@@ -138,6 +138,11 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
               const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
               xhr.open('POST', proxyUrl, true);
               xhr.setRequestHeader('Content-Type', 'application/json');
+              // Add auth header for JWT verification
+              const session = JSON.parse(localStorage.getItem('sb-fekjruuczmmyqtknzwva-auth-token') || '{}');
+              if (session?.access_token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+              }
               const origSend = xhr.send.bind(xhr);
               xhr.send = () => {
                 origSend(JSON.stringify({ url: xhrUrl }));
