@@ -1,3 +1,5 @@
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -11,6 +13,24 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
+  // Verify JWT
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL')!,
+    Deno.env.get('SUPABASE_ANON_KEY')!,
+    { global: { headers: { Authorization: authHeader } } }
+  );
+
+  const token = authHeader.replace('Bearer ', '');
+  const { data, error } = await supabase.auth.getClaims(token);
+  if (error || !data?.claims) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
+
   const NEWSDATA_API_KEY = Deno.env.get('NEWSDATA_API_KEY');
   if (!NEWSDATA_API_KEY) {
     return new Response(
@@ -21,22 +41,20 @@ Deno.serve(async (req) => {
 
   try {
     const body = await req.json().catch(() => ({}));
-    const query = body.q || 'football tunisie';
-    const language = body.language || 'fr';
-    const category = body.category || '';
-    const country = body.country || '';
-    const size = body.size || 10;
+    const query = String(body.q || 'football tunisie').slice(0, 200);
+    const language = String(body.language || 'fr').slice(0, 5);
+    const category = String(body.category || '').slice(0, 50);
+    const country = String(body.country || '').slice(0, 5);
+    const size = Math.min(Math.max(1, Number(body.size) || 10), 50);
 
     const cacheKey = `${query}:${language}:${category}:${country}:${size}`;
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-      console.log('Cache hit for:', cacheKey);
       return new Response(JSON.stringify({ articles: cached.results, totalResults: cached.results.length, cached: true }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Try search query first
     const url = new URL('https://newsdata.io/api/1/latest');
     url.searchParams.set('apikey', NEWSDATA_API_KEY);
     url.searchParams.set('q', query);
@@ -45,15 +63,13 @@ Deno.serve(async (req) => {
     if (category) url.searchParams.set('category', category);
     if (country) url.searchParams.set('country', country);
 
-    console.log('Fetching NewsData.io:', query);
     const res = await fetch(url.toString());
-    const data = await res.json();
-    console.log('NewsData response status:', data.status, 'results:', data.totalResults ?? 0);
+    const data2 = await res.json();
 
     let articles: any[] = [];
 
-    if (data.status === 'success' && data.results?.length > 0) {
-      articles = data.results.map((r: any) => ({
+    if (data2.status === 'success' && data2.results?.length > 0) {
+      articles = data2.results.map((r: any) => ({
         title: r.title || '',
         description: r.description || '',
         url: r.link || '',
@@ -66,9 +82,7 @@ Deno.serve(async (req) => {
       }));
     }
 
-    // Fallback: sports category Tunisia
     if (articles.length === 0) {
-      console.log('Fallback: sports category');
       const fbUrl = new URL('https://newsdata.io/api/1/latest');
       fbUrl.searchParams.set('apikey', NEWSDATA_API_KEY);
       fbUrl.searchParams.set('language', language);
@@ -78,7 +92,6 @@ Deno.serve(async (req) => {
 
       const fbRes = await fetch(fbUrl.toString());
       const fbData = await fbRes.json();
-      console.log('Fallback response:', fbData.status, fbData.totalResults ?? 0);
 
       if (fbData.status === 'success' && fbData.results?.length > 0) {
         articles = fbData.results.map((r: any) => ({

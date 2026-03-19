@@ -755,6 +755,18 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_room_players: {
+        Args: { p_room_id: string }
+        Returns: {
+          captured: Json
+          hand: Json
+          id: string
+          joined_at: string
+          room_id: string
+          score: number
+          user_id: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

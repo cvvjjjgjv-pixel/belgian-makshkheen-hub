@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import Hls from "hls.js";
 import { Tv, Settings, X, Play, RefreshCw, Loader2, Globe, Search, AlertTriangle, ChevronUp, ChevronDown, Volume2, VolumeX, Power, SkipForward, SkipBack, Maximize, Minimize, Radio, Trash2, LogIn } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -138,6 +139,11 @@ const StreamPlayer = ({ url, onError, onReady, useProxy }: { url: string; onErro
               const proxyUrl = `${SUPABASE_URL}/functions/v1/iptv-proxy`;
               xhr.open('POST', proxyUrl, true);
               xhr.setRequestHeader('Content-Type', 'application/json');
+              // Add auth header for JWT verification
+              const session = JSON.parse(localStorage.getItem('sb-fekjruuczmmyqtknzwva-auth-token') || '{}');
+              if (session?.access_token) {
+                xhr.setRequestHeader('Authorization', `Bearer ${session.access_token}`);
+              }
               const origSend = xhr.send.bind(xhr);
               xhr.send = () => {
                 origSend(JSON.stringify({ url: xhrUrl }));
@@ -378,10 +384,19 @@ const TVTab = () => {
         }
       }
 
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      const authHeaders: Record<string, string> = {
+        'Content-Type': 'application/json',
+      };
+      if (session?.access_token) {
+        authHeaders['Authorization'] = `Bearer ${session.access_token}`;
+      }
+
       // 1. Get categories
       const catRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...config, action: 'get_live_categories' }),
       });
       const categories: any[] = catRes.ok ? await catRes.json() : [];
@@ -393,7 +408,7 @@ const TVTab = () => {
       // 2. Get all live streams
       const streamsRes = await fetch(`${SUPABASE_URL}/functions/v1/xtream-proxy`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: authHeaders,
         body: JSON.stringify({ ...config, action: 'get_live_streams' }),
       });
       const streams: any[] = streamsRes.ok ? await streamsRes.json() : [];
