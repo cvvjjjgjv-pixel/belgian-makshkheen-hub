@@ -36,44 +36,16 @@ const GUESS_PLAYERS = [
   { clues: ["Milieu de terrain", "International tunisien", "A joué en France", "Buteur en Coupe du Monde"], answer: "Khazri" },
 ];
 
-// Helper to save score to DB
+// Helper to save score to DB via secure RPC
 const saveGameScore = async (gameType: string, points: number, won: boolean) => {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return;
 
-  // Try to get existing score
-  const { data: existing } = await supabase
-    .from("game_scores")
-    .select("*")
-    .eq("user_id", user.id)
-    .eq("game_type", gameType)
-    .maybeSingle();
-
-  if (existing) {
-    await supabase
-      .from("game_scores")
-      .update({
-        wins: existing.wins + (won ? 1 : 0),
-        losses: existing.losses + (won ? 0 : 1),
-        total_points: existing.total_points + points,
-        games_played: existing.games_played + 1,
-        best_score: Math.max(existing.best_score, points),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", existing.id);
-  } else {
-    await supabase
-      .from("game_scores")
-      .insert({
-        user_id: user.id,
-        game_type: gameType,
-        wins: won ? 1 : 0,
-        losses: won ? 0 : 1,
-        total_points: points,
-        games_played: 1,
-        best_score: points,
-      });
-  }
+  await supabase.rpc("save_game_score", {
+    p_game_type: gameType,
+    p_points: points,
+    p_won: won,
+  });
 };
 
 const GamesTab = () => {
