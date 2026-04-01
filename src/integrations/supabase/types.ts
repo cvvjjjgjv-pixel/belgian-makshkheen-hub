@@ -774,6 +774,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      save_game_score: {
+        Args: { p_game_type: string; p_points: number; p_won: boolean }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "user" | "admin" | "super_admin"
