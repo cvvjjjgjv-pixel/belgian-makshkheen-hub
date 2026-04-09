@@ -1,5 +1,3 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
@@ -11,22 +9,6 @@ const CACHE_TTL = 15 * 60 * 1000;
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
-  }
-
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
   const NEWSDATA_API_KEY = Deno.env.get('NEWSDATA_API_KEY');
@@ -64,23 +46,20 @@ Deno.serve(async (req) => {
     if (country) url.searchParams.set('country', country);
 
     const res = await fetch(url.toString());
-    const data2 = await res.json();
+    const data = await res.json();
 
     let articles: any[] = [];
 
-    console.log('NewsData response status:', data2.status, 'results:', data2.results?.length || 0);
+    console.log('NewsData response status:', data.status, 'results:', data.results?.length || 0);
 
-    if (data2.status === 'success' && data2.results?.length > 0) {
-      articles = data2.results.map((r: any) => ({
+    if (data.status === 'success' && data.results?.length > 0) {
+      articles = data.results.map((r: any) => ({
         title: r.title || '',
         description: r.description || '',
         url: r.link || '',
         image: r.image_url || null,
         publishedAt: r.pubDate || '',
-        source: {
-          name: r.source_name || r.source_id || 'Unknown',
-          url: r.source_url || '',
-        },
+        source: { name: r.source_name || r.source_id || 'Unknown', url: r.source_url || '' },
       }));
     }
 
@@ -102,10 +81,7 @@ Deno.serve(async (req) => {
           url: r.link || '',
           image: r.image_url || null,
           publishedAt: r.pubDate || '',
-          source: {
-            name: r.source_name || r.source_id || 'Unknown',
-            url: r.source_url || '',
-          },
+          source: { name: r.source_name || r.source_id || 'Unknown', url: r.source_url || '' },
         }));
       }
     }
