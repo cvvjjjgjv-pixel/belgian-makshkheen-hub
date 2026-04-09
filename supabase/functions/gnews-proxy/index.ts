@@ -13,22 +13,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  const authHeader = req.headers.get('Authorization');
-  if (!authHeader?.startsWith('Bearer ')) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-
-  const supabase = createClient(
-    Deno.env.get('SUPABASE_URL')!,
-    Deno.env.get('SUPABASE_ANON_KEY')!,
-    { global: { headers: { Authorization: authHeader } } }
-  );
-
-  const { data: { user }, error } = await supabase.auth.getUser();
-  if (error || !user) {
-    return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
-  }
-
   const GNEWS_API_KEY = Deno.env.get('GNEWS_API_KEY');
   if (!GNEWS_API_KEY) {
     return new Response(
@@ -71,10 +55,7 @@ Deno.serve(async (req) => {
           url: a.url || '',
           image: a.image || null,
           publishedAt: a.publishedAt || '',
-          source: {
-            name: a.source?.name || 'Unknown',
-            url: a.source?.url || '',
-          },
+          source: { name: a.source?.name || 'Unknown', url: a.source?.url || '' },
         }));
       }
     } catch (e) {
@@ -100,10 +81,7 @@ Deno.serve(async (req) => {
             url: a.url || '',
             image: a.image || null,
             publishedAt: a.publishedAt || '',
-            source: {
-              name: a.source?.name || 'Unknown',
-              url: a.source?.url || '',
-            },
+            source: { name: a.source?.name || 'Unknown', url: a.source?.url || '' },
           }));
         }
       } catch (e) {
