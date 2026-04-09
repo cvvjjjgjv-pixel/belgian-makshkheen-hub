@@ -7,7 +7,7 @@ import Stories from "@/components/Stories";
 import LiveMatchCard from "@/components/LiveMatchCard";
 import CreatePostForm from "@/components/CreatePostForm";
 import PostsFeed from "@/components/PostsFeed";
-import MagicPrediction from "@/components/MagicPrediction";
+import LiveScoresWidget from "@/components/LiveScoresWidget";
 import WeatherWidget from "@/components/WeatherWidget";
 import RoshaneTechAd from "@/components/RoshaneTechAd";
 import TVTab from "@/components/TVTab";
@@ -58,8 +58,8 @@ const Index = () => {
               <>
                 <Stories />
                 <WeatherWidget />
+                <LiveScoresWidget />
                 <LiveMatchCard />
-                <MagicPrediction />
                 <RoshaneTechAd />
                 <CreatePostForm onPostCreated={() => setRefreshKey((k) => k + 1)} />
                 <PostsFeed refreshKey={refreshKey} />
