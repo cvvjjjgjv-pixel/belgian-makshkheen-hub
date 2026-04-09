@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Verify JWT
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -25,9 +24,8 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
@@ -62,14 +60,25 @@ Deno.serve(async (req) => {
       url.searchParams.set('max', String(max));
       url.searchParams.set('apikey', GNEWS_API_KEY);
 
+      console.log('GNews search:', query);
       const res = await fetch(url.toString());
       const data = await res.json();
 
       if (res.ok && data.articles?.length > 0) {
-        articles = data.articles;
+        articles = data.articles.map((a: any) => ({
+          title: a.title || '',
+          description: a.description || '',
+          url: a.url || '',
+          image: a.image || null,
+          publishedAt: a.publishedAt || '',
+          source: {
+            name: a.source?.name || 'Unknown',
+            url: a.source?.url || '',
+          },
+        }));
       }
     } catch (e) {
-      console.error('Search failed:', e);
+      console.error('GNews search failed:', e);
     }
 
     if (articles.length === 0) {
@@ -85,16 +94,28 @@ Deno.serve(async (req) => {
         const data = await res.json();
 
         if (res.ok && data.articles?.length > 0) {
-          articles = data.articles;
+          articles = data.articles.map((a: any) => ({
+            title: a.title || '',
+            description: a.description || '',
+            url: a.url || '',
+            image: a.image || null,
+            publishedAt: a.publishedAt || '',
+            source: {
+              name: a.source?.name || 'Unknown',
+              url: a.source?.url || '',
+            },
+          }));
         }
       } catch (e) {
-        console.error('Fallback failed:', e);
+        console.error('GNews fallback failed:', e);
       }
     }
 
     if (articles.length > 0) {
       cache.set(cacheKey, { articles, timestamp: Date.now() });
     }
+
+    console.log(`GNews returned ${articles.length} articles`);
 
     return new Response(JSON.stringify({ articles, totalArticles: articles.length }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
