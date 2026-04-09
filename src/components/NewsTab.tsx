@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Newspaper, ExternalLink, Clock, RefreshCw } from "lucide-react";
+import { useEffect, useState, useCallback } from "react";
+import { Newspaper, ExternalLink, Clock, RefreshCw, Zap } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface Article {
@@ -17,10 +17,10 @@ interface Article {
 const CATEGORIES = [
   { id: "football", label: "⚽ Football", query: "football tunisie OR ligue 1 tunisie OR championnat tunisie football" },
   { id: "handball", label: "🤾 Handball", query: "handball tunisie OR championnat tunisie handball" },
-  { id: "volleyball", label: "🏐 Volleyball", query: "volleyball tunisie OR volley tunisie OR championnat tunisie volley" },
-  { id: "est", label: "🔴🟡 EST", query: "Espérance Sportive de Tunis OR Taraji OR الترجي OR EST tunisie" },
-  { id: "nationale", label: "🇹🇳 Équipe Nationale", query: "équipe nationale tunisie OR aigles de carthage OR sélection tunisie" },
-  { id: "championnat", label: "🏆 Championnat", query: "championnat tunisie OR ligue 1 tunisie OR ligue professionnelle tunisie" },
+  { id: "volleyball", label: "🏐 Volleyball", query: "volleyball tunisie OR volley tunisie" },
+  { id: "est", label: "🔴🟡 EST", query: "Espérance Sportive de Tunis OR Taraji OR الترجي" },
+  { id: "nationale", label: "🇹🇳 Équipe Nationale", query: "équipe nationale tunisie OR aigles de carthage" },
+  { id: "championnat", label: "🏆 Championnat", query: "championnat tunisie OR ligue 1 tunisie" },
   { id: "all", label: "📰 Tout", query: "sport tunisie actualité" },
 ] as const;
 
@@ -29,9 +29,20 @@ const NewsTab = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [activeCategory, setActiveCategory] = useState("sport");
+  const [activeCategory, setActiveCategory] = useState("football");
+  const [sourceInfo, setSourceInfo] = useState<string>("");
 
-  const fetchNews = async (isRefresh = false, categoryId?: string) => {
+  const deduplicateArticles = (items: Article[]): Article[] => {
+    const seen = new Set<string>();
+    return items.filter((a) => {
+      const key = a.title.toLowerCase().trim().slice(0, 60);
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  };
+
+  const fetchNews = useCallback(async (isRefresh = false, categoryId?: string) => {
     if (isRefresh) setRefreshing(true);
     else setLoading(true);
     setError(null);
@@ -39,26 +50,49 @@ const NewsTab = () => {
     const cat = CATEGORIES.find(c => c.id === (categoryId || activeCategory)) || CATEGORIES[0];
 
     try {
-      const { data, error: fnError } = await supabase.functions.invoke("newsdata-proxy", {
-        body: {
-          q: cat.query,
-          language: "fr",
-          size: 10,
-        },
-      });
+      // Fetch from both APIs in parallel
+      const [newsDataResult, gnewsResult] = await Promise.allSettled([
+        supabase.functions.invoke("newsdata-proxy", {
+          body: { q: cat.query, language: "fr", size: 10 },
+        }),
+        supabase.functions.invoke("gnews-proxy", {
+          body: { q: cat.query, lang: "fr", max: 10 },
+        }),
+      ]);
 
-      if (fnError) throw new Error(fnError.message);
-      if (data?.error) throw new Error(data.error);
+      let allArticles: Article[] = [];
+      const sources: string[] = [];
 
-      setArticles(data.articles || []);
+      // Process NewsData results
+      if (newsDataResult.status === "fulfilled" && newsDataResult.value.data?.articles?.length > 0) {
+        allArticles.push(...newsDataResult.value.data.articles);
+        sources.push("NewsData");
+      }
+
+      // Process GNews results
+      if (gnewsResult.status === "fulfilled" && gnewsResult.value.data?.articles?.length > 0) {
+        allArticles.push(...gnewsResult.value.data.articles);
+        sources.push("GNews");
+      }
+
+      // Deduplicate and sort by date
+      allArticles = deduplicateArticles(allArticles);
+      allArticles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());
+
+      setArticles(allArticles);
+      setSourceInfo(sources.length > 0 ? sources.join(" + ") : "");
+
+      if (allArticles.length === 0) {
+        setError("Aucune actualité trouvée pour cette catégorie.");
+      }
     } catch (err) {
       setError("Impossible de charger les actualités.");
-      console.error("GNews error:", err);
+      console.error("News fetch error:", err);
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  };
+  }, [activeCategory]);
 
   useEffect(() => {
     fetchNews(false, activeCategory);
@@ -80,13 +114,21 @@ const NewsTab = () => {
           <Newspaper className="w-5 h-5 text-accent" />
           Actualités
         </h2>
-        <button
-          onClick={() => fetchNews(true)}
-          disabled={refreshing}
-          className="p-2 rounded-full bg-card border border-border text-muted-foreground hover:text-accent transition-colors"
-        >
-          <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
-        </button>
+        <div className="flex items-center gap-2">
+          {sourceInfo && (
+            <span className="flex items-center gap-1 text-[10px] text-muted-foreground bg-card border border-border px-2 py-1 rounded-full">
+              <Zap className="w-3 h-3 text-accent" />
+              {sourceInfo}
+            </span>
+          )}
+          <button
+            onClick={() => fetchNews(true)}
+            disabled={refreshing}
+            className="p-2 rounded-full bg-card border border-border text-muted-foreground hover:text-accent transition-colors"
+          >
+            <RefreshCw className={`w-4 h-4 ${refreshing ? "animate-spin" : ""}`} />
+          </button>
+        </div>
       </div>
 
       {/* Category filters */}
@@ -106,7 +148,6 @@ const NewsTab = () => {
         ))}
       </div>
 
-
       {loading && (
         <div className="space-y-3 px-4">
           {[1, 2, 3, 4].map((i) => (
@@ -122,7 +163,6 @@ const NewsTab = () => {
         </div>
       )}
 
-      {/* Error state */}
       {error && !loading && (
         <div className="mx-4 p-6 bg-destructive/10 border border-destructive/30 rounded-2xl text-center">
           <Newspaper className="w-12 h-12 text-destructive/40 mx-auto mb-3" />
@@ -136,7 +176,6 @@ const NewsTab = () => {
         </div>
       )}
 
-      {/* Empty state */}
       {!loading && !error && articles.length === 0 && (
         <div className="text-center py-16 text-muted-foreground">
           <Newspaper className="w-16 h-16 mx-auto mb-4 opacity-20" />
@@ -144,10 +183,9 @@ const NewsTab = () => {
         </div>
       )}
 
-      {/* Articles list */}
       {!loading && !error && articles.map((article, i) => (
         <a
-          key={i}
+          key={`${article.url}-${i}`}
           href={article.url}
           target="_blank"
           rel="noopener noreferrer"
@@ -159,6 +197,7 @@ const NewsTab = () => {
                 src={article.image}
                 alt={article.title}
                 className="w-full h-44 object-cover"
+                loading="lazy"
                 onError={(e) => {
                   (e.target as HTMLImageElement).style.display = "none";
                 }}

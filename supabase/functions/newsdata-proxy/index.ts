@@ -13,7 +13,6 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // Verify JWT
   const authHeader = req.headers.get('Authorization');
   if (!authHeader?.startsWith('Bearer ')) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -25,9 +24,8 @@ Deno.serve(async (req) => {
     { global: { headers: { Authorization: authHeader } } }
   );
 
-  const token = authHeader.replace('Bearer ', '');
-  const { data, error } = await supabase.auth.getClaims(token);
-  if (error || !data?.claims) {
+  const { data: { user }, error } = await supabase.auth.getUser();
+  if (error || !user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 
@@ -55,6 +53,8 @@ Deno.serve(async (req) => {
       });
     }
 
+    console.log('Fetching NewsData.io:', query);
+
     const url = new URL('https://newsdata.io/api/1/latest');
     url.searchParams.set('apikey', NEWSDATA_API_KEY);
     url.searchParams.set('q', query);
@@ -67,6 +67,8 @@ Deno.serve(async (req) => {
     const data2 = await res.json();
 
     let articles: any[] = [];
+
+    console.log('NewsData response status:', data2.status, 'results:', data2.results?.length || 0);
 
     if (data2.status === 'success' && data2.results?.length > 0) {
       articles = data2.results.map((r: any) => ({
