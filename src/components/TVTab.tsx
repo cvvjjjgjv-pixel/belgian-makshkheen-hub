@@ -25,46 +25,27 @@ interface Channel {
   useProxy?: boolean;
 }
 
-// --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES ---
-// YouTube: Utilise des video IDs de lives 24/7 (plus fiable que yt-channel://)
-// HLS: Streams directs .m3u8
+// --- CHAÎNES VÉRIFIÉES ET FONCTIONNELLES (mise à jour avril 2026) ---
 const CHANNELS_DATA: Channel[] = [
   // === TUNISIE ===
-  { id: "watania1", name: "Watania 1 (الوطنية 1)", url: "https://www.youtube.com/watch?v=n40b8OsYrRQ", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "watania2", name: "Watania 2 (الوطنية 2)", url: "https://www.youtube.com/watch?v=EUne0-bLb48", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
   { id: "mosaique", name: "Mosaïque FM TV", url: "https://webcam.mosaiquefm.net/mosatv/_definst_/studio/playlist.m3u8?DVR", category: "Tunisie", icon: "🇹🇳", quality: "1080p" },
-  { id: "jawhara-tv", name: "Jawhara TV", url: "http://streaming.toutech.net:1935/live/mp4:jawharafm.sdp/playlist.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
-  { id: "elhiwar", name: "Elhiwar Ettounsi", url: "https://www.youtube.com/watch?v=Z9AAhCafb9c", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
-  { id: "attessia", name: "Attessia TV (التاسعة)", url: "https://www.youtube.com/watch?v=live_attessia", category: "Tunisie", icon: "🇹🇳", quality: "YT" },
+  { id: "jawhara-tv", name: "Jawhara TV", url: "http://streaming.toutech.net:1935/live/mp4:jawharafm.sdp/playlist.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p", useProxy: true },
   { id: "storychannel", name: "StoryChannel TV", url: "https://136044159.r.cdnsun.net/storychannel.m3u8", category: "Tunisie", icon: "🇹🇳", quality: "720p" },
-  // === INFOS - YouTube Live 24/7 (video IDs vérifiés) ===
-  { id: "aljazeera", name: "Al Jazeera Arabic", url: "https://www.youtube.com/watch?v=bNyUyrR0PHo", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "aljazeera-en", name: "Al Jazeera English", url: "https://www.youtube.com/watch?v=F-POY4Q0QSI", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "france24-fr", name: "France 24 FR", url: "https://www.youtube.com/watch?v=l8PMl7tUDIE", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "france24-ar", name: "France 24 Arabic", url: "https://www.youtube.com/watch?v=3ursYA8HMeo", category: "Infos", icon: "🇫🇷", quality: "YT" },
-  { id: "alarabiya", name: "Al Arabiya (العربية)", url: "https://www.youtube.com/watch?v=1Uw6ZkbsAH8", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "sky-news-ar", name: "Sky News Arabia", url: "https://www.youtube.com/live/yd_H1PwIB0E", category: "Infos", icon: "📡", quality: "YT" },
-  { id: "dw", name: "DW News", url: "https://www.youtube.com/watch?v=GE_SfNVNyqk", category: "Infos", icon: "🌍", quality: "YT" },
-  { id: "dw-ar", name: "DW عربية", url: "https://www.youtube.com/watch?v=xiBnr9mczJs", category: "Infos", icon: "🌍", quality: "YT" },
+  // === INFOS - HLS directs vérifiés ===
+  { id: "aljazeera-ar", name: "Al Jazeera Arabic (الجزيرة)", url: "https://live-hls-web-aja.getaj.net/AJA/index.m3u8", category: "Infos", icon: "📡", quality: "HD" },
+  { id: "aljazeera-en", name: "Al Jazeera English", url: "https://live-hls-aje-ak.getaj.net/AJE/index.m3u8", category: "Infos", icon: "📡", quality: "HD" },
+  { id: "alarabiya", name: "Al Arabiya (العربية)", url: "https://live.alarabiya.net/alarabiapublish/alarabiya.smil/playlist.m3u8", category: "Infos", icon: "📡", quality: "HD" },
+  { id: "sky-news-ar", name: "Sky News Arabia", url: "https://stream.skynewsarabia.com/hls/sna.m3u8", category: "Infos", icon: "📡", quality: "HD" },
+  { id: "dw", name: "DW News", url: "https://dwamdstream104.akamaized.net/hls/live/2015530/dwstream104/index.m3u8", category: "Infos", icon: "🌍", quality: "HD" },
+  { id: "trt", name: "TRT World", url: "https://tv-trtworld.medya.trt.com.tr/master.m3u8", category: "Infos", icon: "🇹🇷", quality: "HD" },
   { id: "euronews", name: "Euronews FR", url: "https://www.youtube.com/watch?v=NiRIbKwAejk", category: "Infos", icon: "🇪🇺", quality: "YT" },
-  { id: "trt", name: "TRT World", url: "https://www.youtube.com/watch?v=CV5Fooi8YJI", category: "Infos", icon: "🇹🇷", quality: "YT" },
-  { id: "rt-ar", name: "RT Arabic", url: "https://www.youtube.com/watch?v=fBq7fv6BfxQ", category: "Infos", icon: "📡", quality: "YT" },
   // === SPORT ===
   { id: "alkass1", name: "Al Kass 1", url: "https://svs.itworkscdn.net/alkass1live/alkass1.smil/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   { id: "alkass2", name: "Al Kass 2", url: "https://svs.itworkscdn.net/alkass2live/alkass2.smil/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   { id: "alkass4", name: "Al Kass 4", url: "https://svs.itworkscdn.net/alkass4live/alkass4.smil/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
   { id: "alkass5", name: "Al Kass 5", url: "https://svs.itworkscdn.net/alkass5live/alkass5.smil/playlist.m3u8", category: "Sports", icon: "🏆", quality: "HD", useProxy: true },
-  { id: "bein1", name: "beIN SPORTS 1", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/1", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein2", name: "beIN SPORTS 2", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/2", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein3", name: "beIN SPORTS 3", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/3", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein4", name: "beIN SPORTS 4", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/4", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein5", name: "beIN SPORTS 5", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/5", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein6", name: "beIN SPORTS 6", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/6", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein7", name: "beIN SPORTS 7", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/7", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein8", name: "beIN SPORTS 8", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/8", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
-  { id: "bein9", name: "beIN SPORTS 9", url: "http://feeds.legaliptv.live:80/ScribdFreeM3U-IPTV-2026/FreebeINSports/9", category: "Sports", icon: "⚽", quality: "HD", useProxy: true },
   // === SCIENCE ===
-  { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=nA9UZF-SZoQ", category: "Science", icon: "🚀", quality: "YT" },
+  { id: "nasa", name: "NASA TV", url: "https://www.youtube.com/watch?v=6RwfNBtepa4", category: "Science", icon: "🚀", quality: "YT" },
 ];
 
 const STORAGE_KEY = "tv-bein-custom-links";
