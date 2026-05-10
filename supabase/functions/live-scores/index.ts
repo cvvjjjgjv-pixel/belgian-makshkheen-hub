@@ -4,19 +4,29 @@ const corsHeaders = {
 };
 
 const cache = new Map<string, { data: any; timestamp: number }>();
-const CACHE_TTL = 2 * 60 * 1000; // 2 min cache for live scores
+const CACHE_TTL = 2 * 60 * 1000;
+
+// TheSportsDB free public API (key "3" = free tier, no signup required)
+const BASE = 'https://www.thesportsdb.com/api/v1/json/3';
+const LIVE_STATUSES = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'LIVE'];
+
+function mapStatus(strStatus: string | null, strProgress: string | null) {
+  const s = (strStatus || '').toUpperCase();
+  const p = (strProgress || '').toUpperCase();
+  if (s.includes('FT') || s.includes('FINISHED')) {
+    return { short: 'FT', long: 'Terminé', elapsed: null };
+  }
+  if (s.includes('HT') || s === 'HALF TIME') return { short: 'HT', long: 'Mi-temps', elapsed: 45 };
+  if (s.includes('NS') || s === 'NOT STARTED' || !s) {
+    return { short: 'NS', long: 'À venir', elapsed: null };
+  }
+  const elapsed = parseInt(p) || parseInt(s) || null;
+  return { short: '1H', long: 'En direct', elapsed };
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
-  }
-
-  const API_KEY = Deno.env.get('FOOTBALL_API_KEY');
-  if (!API_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'FOOTBALL_API_KEY not configured' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
   }
 
   try {
@@ -27,20 +37,14 @@ Deno.serve(async (req) => {
     let cacheKey = '';
 
     if (action === 'live') {
-      endpoint = 'https://v3.football.api-sports.io/fixtures?live=all';
+      endpoint = `${BASE}/livescore.php?s=Soccer`;
       cacheKey = 'live';
-    } else if (action === 'today') {
+    } else {
       const today = new Date().toISOString().split('T')[0];
-      endpoint = `https://v3.football.api-sports.io/fixtures?date=${today}`;
+      endpoint = `${BASE}/eventsday.php?d=${today}&s=Soccer`;
       cacheKey = `today-${today}`;
-    } else if (action === 'league') {
-      const leagueId = Number(body.league) || 202; // Ligue 1 Tunisie by default
-      const season = Number(body.season) || new Date().getFullYear();
-      endpoint = `https://v3.football.api-sports.io/standings?league=${leagueId}&season=${season}`;
-      cacheKey = `league-${leagueId}-${season}`;
     }
 
-    // Check cache
     const cached = cache.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
       return new Response(JSON.stringify({ ...cached.data, cached: true }), {
@@ -49,79 +53,55 @@ Deno.serve(async (req) => {
     }
 
     console.log('Fetching:', endpoint);
-
-    const res = await fetch(endpoint, {
-      headers: {
-        'x-apisports-key': API_KEY,
-      },
-    });
-
+    const res = await fetch(endpoint);
     const data = await res.json();
 
-    if (!res.ok) {
-      console.error('API-Football error:', data);
-      return new Response(
-        JSON.stringify({ error: 'API request failed', details: data }),
-        { status: res.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
+    const events = data.events || data.livescore || [];
 
-    // Process response based on action
-    let result: any = {};
+    const fixtures = events.map((e: any) => {
+      const status = mapStatus(e.strStatus, e.strProgress);
+      const dateStr = e.strTimestamp || `${e.dateEvent}T${e.strTime || '00:00:00'}`;
+      const homeGoals = e.intHomeScore !== null && e.intHomeScore !== undefined && e.intHomeScore !== ''
+        ? parseInt(e.intHomeScore) : null;
+      const awayGoals = e.intAwayScore !== null && e.intAwayScore !== undefined && e.intAwayScore !== ''
+        ? parseInt(e.intAwayScore) : null;
 
-    if (action === 'live' || action === 'today') {
-      const fixtures = (data.response || []).map((f: any) => ({
-        id: f.fixture?.id,
-        date: f.fixture?.date,
-        status: {
-          short: f.fixture?.status?.short,
-          long: f.fixture?.status?.long,
-          elapsed: f.fixture?.status?.elapsed,
-        },
+      return {
+        id: e.idEvent,
+        date: dateStr,
+        status,
         league: {
-          id: f.league?.id,
-          name: f.league?.name,
-          country: f.league?.country,
-          logo: f.league?.logo,
-          round: f.league?.round,
+          id: e.idLeague,
+          name: e.strLeague || 'Football',
+          country: e.strCountry || '',
+          logo: e.strLeagueBadge || '',
+          round: e.intRound ? `Round ${e.intRound}` : '',
         },
         home: {
-          id: f.teams?.home?.id,
-          name: f.teams?.home?.name,
-          logo: f.teams?.home?.logo,
-          winner: f.teams?.home?.winner,
+          id: e.idHomeTeam,
+          name: e.strHomeTeam,
+          logo: e.strHomeTeamBadge || '',
+          winner: homeGoals !== null && awayGoals !== null ? homeGoals > awayGoals : null,
         },
         away: {
-          id: f.teams?.away?.id,
-          name: f.teams?.away?.name,
-          logo: f.teams?.away?.logo,
-          winner: f.teams?.away?.winner,
+          id: e.idAwayTeam,
+          name: e.strAwayTeam,
+          logo: e.strAwayTeamBadge || '',
+          winner: homeGoals !== null && awayGoals !== null ? awayGoals > homeGoals : null,
         },
-        goals: {
-          home: f.goals?.home,
-          away: f.goals?.away,
-        },
-        score: {
-          halftime: f.score?.halftime,
-          fulltime: f.score?.fulltime,
-        },
-      }));
+        goals: { home: homeGoals, away: awayGoals },
+      };
+    });
 
-      // Sort: live matches first, then upcoming
-      fixtures.sort((a: any, b: any) => {
-        const liveStatuses = ['1H', '2H', 'HT', 'ET', 'BT', 'P', 'SUSP', 'INT', 'LIVE'];
-        const aLive = liveStatuses.includes(a.status.short);
-        const bLive = liveStatuses.includes(b.status.short);
-        if (aLive && !bLive) return -1;
-        if (!aLive && bLive) return 1;
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
+    fixtures.sort((a: any, b: any) => {
+      const aLive = LIVE_STATUSES.includes(a.status.short);
+      const bLive = LIVE_STATUSES.includes(b.status.short);
+      if (aLive && !bLive) return -1;
+      if (!aLive && bLive) return 1;
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
+    });
 
-      result = { fixtures, total: fixtures.length };
-    } else if (action === 'league') {
-      result = { standings: data.response || [] };
-    }
-
+    const result = { fixtures, total: fixtures.length };
     cache.set(cacheKey, { data: result, timestamp: Date.now() });
 
     return new Response(JSON.stringify(result), {
