@@ -53,8 +53,21 @@ Deno.serve(async (req) => {
     }
 
     console.log('Fetching:', endpoint);
-    const res = await fetch(endpoint);
-    const data = await res.json();
+    const res = await fetch(endpoint, {
+      headers: { 'Accept': 'application/json', 'User-Agent': 'Mozilla/5.0' },
+    });
+    const text = await res.text();
+    let data: any = {};
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error('Non-JSON response from TheSportsDB:', res.status, text.slice(0, 200));
+      const empty = { fixtures: [], total: 0, fallback: true };
+      cache.set(cacheKey, { data: empty, timestamp: Date.now() });
+      return new Response(JSON.stringify(empty), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
     const events = data.events || data.livescore || [];
 
