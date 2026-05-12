@@ -78,7 +78,7 @@ const Presentation = () => {
         transition={{ delay: 0.3 }}
         className="font-arabic text-4xl md:text-5xl font-black text-accent mb-2"
       >
-        مكشخين بلجيكا
+        مشجعون بلجيكا
       </motion.h1>
 
       <motion.p
