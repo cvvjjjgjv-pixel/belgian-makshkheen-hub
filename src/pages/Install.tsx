@@ -60,7 +60,7 @@ const Install = () => {
       <div className="p-6 space-y-6">
         <div className="text-center space-y-3">
           <img src="/pwa-icon-512.png" alt="App icon" className="w-24 h-24 mx-auto rounded-2xl" />
-          <h2 className="text-xl font-bold text-foreground">Mkachkhines Belgique</h2>
+          <h2 className="text-xl font-bold text-foreground">Fans in Belgium</h2>
           <p className="text-sm text-muted-foreground">Installe l'app sur ton téléphone pour y accéder rapidement !</p>
         </div>
 
