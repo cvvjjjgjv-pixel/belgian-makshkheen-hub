@@ -2,7 +2,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 const config: CapacitorConfig = {
   appId: 'app.lovable.belgianmakshkheenhub',
-  appName: 'Mkachkhines Belgique',
+  appName: 'Fans in Belgium',
   webDir: 'dist',
   plugins: {
     SplashScreen: {

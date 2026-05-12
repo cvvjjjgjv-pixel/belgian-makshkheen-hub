@@ -23,9 +23,9 @@ export default defineConfig(({ mode }) => ({
         globPatterns: ["**/*.{js,css,html,ico,png,svg,woff2}"],
       },
       manifest: {
-        name: "Mkachkhines Belgique",
-        short_name: "Mkachkhines",
-        description: "La communauté des supporters - Actualités, Forum, Chat en direct",
+        name: "Fans in Belgium",
+        short_name: "Fans in Belgium",
+        description: "Fans in Belgium - Actualités, Forum, Chat en direct",
         theme_color: "#D4A017",
         background_color: "#0A0A0A",
         display: "standalone",
