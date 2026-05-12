@@ -100,7 +100,7 @@ const AppHeader = ({ onProfileClick }: AppHeaderProps) => {
             <img src={logo} alt="Logo" className="w-10 h-10 rounded-full border-2 border-accent object-cover" />
             <div>
               <h1 className="font-arabic text-lg font-bold text-accent">مكشخين بلجيكا</h1>
-              <p className="text-xs text-foreground/70">Mkachkhines Belgique</p>
+              <p className="text-xs text-foreground/70">Fans in Belgium</p>
             </div>
           </div>
           <div className="flex items-center gap-3">
