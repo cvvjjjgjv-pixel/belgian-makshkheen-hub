@@ -76,9 +76,9 @@ const Presentation = () => {
         initial={{ opacity: 0, y: 30 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
-        className="font-arabic text-4xl md:text-5xl font-black text-accent mb-2"
+        className="text-4xl md:text-5xl font-black text-accent mb-2"
       >
-        مشجعون بلجيكا
+        Fans in Belgium
       </motion.h1>
 
       <motion.p

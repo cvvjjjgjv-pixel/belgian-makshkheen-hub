@@ -59,8 +59,7 @@ const Auth = () => {
       >
         <div className="text-center mb-8">
           <img src={logo} alt="Logo" className="w-20 h-20 rounded-full mx-auto mb-4 border-2 border-accent" />
-          <h1 className="font-arabic text-2xl font-bold text-accent">مشجعون بلجيكا</h1>
-          <p className="text-sm text-muted-foreground mt-1">Fans in Belgium</p>
+          <h1 className="text-2xl font-bold text-accent">Fans in Belgium</h1>
         </div>
 
         <div className="bg-card rounded-2xl p-6 border border-border">
