@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
+import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "@/hooks/useAuth";
 import AppHeader from "@/components/AppHeader";
 import BottomNav from "@/components/BottomNav";
 import Stories from "@/components/Stories";
@@ -20,6 +22,7 @@ import LiveStreamTab from "@/components/LiveStreamTab";
 type Tab = "accueil" | "tv" | "live" | "news" | "forum" | "chat" | "profil";
 
 const Index = () => {
+  const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<Tab>("accueil");
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -39,6 +42,18 @@ const Index = () => {
     };
     loadTheme();
   }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="text-muted-foreground">Chargement...</div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
 
   return (
     <div className="min-h-screen bg-background max-w-lg mx-auto relative">
